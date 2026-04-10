@@ -16,6 +16,40 @@ export interface IListInfo {
 export class FaqListService {
   private _sp: ReturnType<typeof spfi>;
 
+  /**
+   * Normalises every possible shape SharePoint REST can return for a Choice/MultiChoice field:
+   *   - Modern multi-choice:  { results: ["Account", "Billing"] }
+   *   - Plain string:         "General"
+   *   - Comma-separated:      "Account, Billing"   (list-view display format)
+   *   - Semicolon-separated:  "Account;Billing"
+   *   - Classic lookup fmt:   "Account;#Billing;#"
+   *   - null / undefined / ""
+   */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  public static _parseCategories(raw: any): string[] {
+    if (raw === null || raw === undefined || raw === '') return [];
+
+    // PnPjs v4 unwraps OData — multi-choice comes back as a plain string[]
+    if (Array.isArray(raw)) {
+      return raw.map((c: string) => String(c).trim()).filter((c: string) => !!c);
+    }
+
+    // Older OData wrapper: { results: string[] }
+    if (typeof raw === 'object' && raw.results && Array.isArray(raw.results)) {
+      return (raw.results as string[]).map((c: string) => c.trim()).filter((c: string) => !!c);
+    }
+
+    if (typeof raw === 'string' && raw.trim() !== '') {
+      // Remove classic SharePoint lookup "#" markers: "Account;#Billing;#" → "Account;Billing"
+      const cleaned = raw.replace(/;#/g, ';').replace(/^;+|;+$/g, '').trim();
+      // Determine delimiter: prefer semicolon, fall back to comma
+      const delimiter = cleaned.indexOf(';') !== -1 ? ';' : ',';
+      return cleaned.split(delimiter).map((c: string) => c.trim()).filter((c: string) => !!c);
+    }
+
+    return [];
+  }
+
   constructor(context: WebPartContext) {
     this._sp = spfi().using(SPFx(context));
   }
@@ -72,7 +106,7 @@ export class FaqListService {
       NumberOfLines: 10,
     });
 
-    await list.fields.addChoice('Category', {
+    await list.fields.addMultiChoice('Category', {
       Choices: ['General', 'Account', 'Billing', 'Technical', 'Other'],
     });
 
@@ -98,7 +132,7 @@ export class FaqListService {
       await list.fields.addMultilineText('Answer', { RichText: true, NumberOfLines: 10 });
     }
     if (fieldNames.indexOf('Category') === -1) {
-      await list.fields.addChoice('Category', {
+      await list.fields.addMultiChoice('Category', {
         Choices: ['General', 'Account', 'Billing', 'Technical', 'Other'],
       });
     }
@@ -123,9 +157,15 @@ export class FaqListService {
     if (!listName) return [];
 
     try {
+      // First, resolve the actual internal name of the Category field
+      // (SharePoint may rename it to "Category0" if a built-in field conflicts)
+      const categoryInternalName = await this._getCategoryFieldName(listName);
+
+      const selectFields = ['Id', 'Title', 'Answer', categoryInternalName, 'SortOrder', 'IsActive', 'ExpandedByDefault'];
+
       let query = this._sp.web.lists
         .getByTitle(listName)
-        .items.select('Id', 'Title', 'Answer', 'Category', 'SortOrder', 'IsActive', 'ExpandedByDefault')
+        .items.select(...selectFields)
         .orderBy(sortField || 'SortOrder', sortDirection !== 'desc')
         .top(maxItems > 0 ? maxItems : 500);
 
@@ -133,53 +173,88 @@ export class FaqListService {
         query = query.filter('IsActive eq 1');
       }
 
-      interface IRawFaqItem {
-        Id: number;
-        Title: string;
-        Answer: string;
-        Category: string;
-        SortOrder: number;
-        IsActive: boolean;
-        ExpandedByDefault: boolean;
-      }
       const items = await query();
-      return (items as IRawFaqItem[]).map(item => ({
-        id: item.Id,
-        title: item.Title || '',
-        answer: item.Answer || '',
-        category: item.Category || '',
-        sortOrder: item.SortOrder || 0,
-        isActive: item.IsActive !== false,
-        expandedByDefault: item.ExpandedByDefault === true,
-      }));
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return (items as any[]).map(item => {
+        // Try the resolved internal name first, then fall back to 'Category'
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const raw: any = item[categoryInternalName] !== undefined ? item[categoryInternalName] : item.Category;
+        const cats: string[] = FaqListService._parseCategories(raw);
+        return {
+          id: item.Id,
+          title: item.Title || '',
+          answer: item.Answer || '',
+          categories: cats,
+          sortOrder: item.SortOrder || 0,
+          isActive: item.IsActive !== false,
+          expandedByDefault: item.ExpandedByDefault === true,
+        };
+      });
     } catch (e) {
       console.error('FaqListService.getItems error:', e);
       throw e;
     }
   }
 
+  /**
+   * Finds the actual internal name of the Category field.
+   * SharePoint renames user-created fields to avoid built-in collisions
+   * (e.g. "Category" → "Category0").
+   */
+  private async _getCategoryFieldName(listName: string): Promise<string> {
+    try {
+      interface IRawField { InternalName: string; Title: string; }
+      const fields = await this._sp.web.lists
+        .getByTitle(listName)
+        .fields
+        .select('InternalName', 'Title')
+        .filter("Title eq 'Category' or InternalName eq 'Category' or InternalName eq 'Category0'")() as IRawField[];
+
+      // Prefer exact internal name match, then title match
+      const byInternal = fields.filter(f => f.InternalName === 'Category' || f.InternalName === 'Category0');
+      if (byInternal.length > 0) {
+        return byInternal[0].InternalName;
+      }
+      const byTitle = fields.filter(f => f.Title === 'Category');
+      if (byTitle.length > 0) {
+        return byTitle[0].InternalName;
+      }
+    } catch {
+      // fall through to default
+    }
+    return 'Category';
+  }
+
+  /**
+   * Returns the available category choices from the field definition.
+   * Using the field schema guarantees the filter bar shows all configured
+   * choices even when no items have been tagged yet.
+   */
   public async getCategories(listName: string): Promise<string[]> {
     if (!listName) return [];
     try {
-      interface IRawCatItem { Category: string; }
-      const items = await this._sp.web.lists
+      const internalName = await this._getCategoryFieldName(listName);
+      interface IRawFieldInfo {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        Choices: any;
+        InternalName: string;
+      }
+      const field = await this._sp.web.lists
         .getByTitle(listName)
-        .items.select('Category')
-        .filter('IsActive eq 1')
-        .top(500)();
-      const cats = (items as IRawCatItem[])
-        .map(i => i.Category || '')
-        .filter((c: string) => !!c);
-      // Deduplicate without Set spread (es5 compat)
-      const seen: { [key: string]: boolean } = {};
-      const unique: string[] = [];
-      cats.forEach((c: string) => {
-        if (!seen[c]) {
-          seen[c] = true;
-          unique.push(c);
-        }
-      });
-      return unique.sort();
+        .fields.getByInternalNameOrTitle(internalName)
+        .select('Choices', 'InternalName')() as IRawFieldInfo;
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const raw: any = field && field.Choices;
+      if (!raw) return [];
+
+      let choices: string[] = [];
+      if (Array.isArray(raw)) {
+        choices = raw as string[];
+      } else if (raw.results && Array.isArray(raw.results)) {
+        choices = raw.results as string[];
+      }
+      return choices.filter((c: string) => !!c).sort();
     } catch {
       return [];
     }

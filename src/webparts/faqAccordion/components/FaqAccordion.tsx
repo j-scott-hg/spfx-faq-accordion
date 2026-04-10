@@ -14,22 +14,20 @@ const DEFAULT_CATEGORY_COLORS = [
   '#ca5010', '#004b1c', '#004e8c', '#750b1c', '#4f6bed',
 ];
 
-function parseCategoryColors(raw: string): string[] {
+function parseCategoryColorPalette(raw: string): string[] {
   if (!raw) return DEFAULT_CATEGORY_COLORS;
   try {
     const parsed: unknown = JSON.parse(raw);
     if (Array.isArray(parsed)) {
-      // Fill any empty slots with defaults
       return DEFAULT_CATEGORY_COLORS.map((def, i) => {
         const val = (parsed as string[])[i];
         return val && val.trim() ? val.trim() : def;
       });
     }
-  } catch {
-    // fall through
-  }
+  } catch { /* fall through */ }
   return DEFAULT_CATEGORY_COLORS;
 }
+
 
 interface IFaqAccordionState {
   items: IFaqItem[];
@@ -86,10 +84,24 @@ export default class FaqAccordion extends React.Component<IFaqAccordionMainProps
     this.setState({ loading: true, error: '' });
 
     try {
-      const [items, categories] = await Promise.all([
+      // Fetch items and field-defined choices in parallel
+      const [items, fieldChoices] = await Promise.all([
         this._service.getItems(listName, sortField || 'SortOrder', sortDirection || 'asc', showOnlyActive, maxItems || 500),
         this._service.getCategories(listName),
       ]);
+
+      // Merge field choices with any values actually used in items (handles custom/legacy values)
+      const seen: { [key: string]: boolean } = {};
+      const categories: string[] = [];
+      fieldChoices.forEach((cat: string) => {
+        if (cat && !seen[cat]) { seen[cat] = true; categories.push(cat); }
+      });
+      items.forEach(item => {
+        (item.categories || []).forEach((cat: string) => {
+          if (cat && !seen[cat]) { seen[cat] = true; categories.push(cat); }
+        });
+      });
+      categories.sort();
 
       const effectiveExpandMode = this.props.expandMode || 'single';
       let expandedIds: number[] = [];
@@ -134,8 +146,9 @@ export default class FaqAccordion extends React.Component<IFaqAccordionMainProps
 
     let filtered = items;
 
+    // Multi-category: show item if any of its categories matches the selected filter
     if (selectedCategory) {
-      filtered = filtered.filter(i => i.category === selectedCategory);
+      filtered = filtered.filter(i => i.categories.indexOf(selectedCategory) !== -1);
     }
 
     if (searchQuery.trim()) {
@@ -150,15 +163,6 @@ export default class FaqAccordion extends React.Component<IFaqAccordionMainProps
     }
 
     return filtered;
-  }
-
-  // Build a map of category name → color for consistent color-coding
-  private _buildCategoryColorMap(categories: string[], colorPalette: string[]): { [cat: string]: string } {
-    const map: { [cat: string]: string } = {};
-    categories.forEach((cat, idx) => {
-      map[cat] = colorPalette[idx % colorPalette.length];
-    });
-    return map;
   }
 
   private _getContainerStyle(): React.CSSProperties {
@@ -182,16 +186,13 @@ export default class FaqAccordion extends React.Component<IFaqAccordionMainProps
   public render(): React.ReactElement {
     const {
       showTitle, titleText, titleAlignment, titleFontSize, showCategories, showSearch, categoryStyle,
-      categoryAlignment, showAllCategory, categoryColorCoding, categoryCustomColors,
+      categoryAlignment, showAllCategory, categoryColorCoding, categoryColors,
       searchPlaceholder, searchPlacement, searchAlignment, accordionStyle, arrowPosition, iconStyle, animationEnabled,
       questionFontSize, questionStyle, answerFontSize, categoryFontSize,
       accentColor, colorTitle, colorQuestion, colorAnswer,
       colorIcons, colorBorders, borderDarkness, borderThickness, borderRadius,
       emptyStateText, loadingText, isDarkTheme,
     } = this.props;
-
-    // Resolve the active color palette (custom or defaults)
-    const activeCategoryColors = parseCategoryColors(categoryCustomColors);
 
     const { loading, error, expandedIds, selectedCategory, searchQuery, categories } = this.state;
     const filteredItems = this._getFilteredItems();
@@ -203,8 +204,24 @@ export default class FaqAccordion extends React.Component<IFaqAccordionMainProps
       isDarkTheme ? styles.darkTheme : '',
     ].filter(Boolean).join(' ');
 
-    // Effective accent: user-supplied hex > SharePoint theme token (via CSS var)
-    const effectiveAccent = accentColor && accentColor.trim() ? accentColor.trim() : undefined;
+    // Parse the stored category color palette (JSON array of hex strings)
+    const parsedCategoryColors = parseCategoryColorPalette(categoryColors);
+
+    // Build a stable map: sorted category name → assigned color
+    const categoryColorMap: { [cat: string]: string } = {};
+    categories.forEach((cat, idx) => {
+      categoryColorMap[cat] = parsedCategoryColors[idx % parsedCategoryColors.length];
+    });
+
+    // When color coding is ON and a specific category is selected, use that category's color
+    // as the accent. When "All" is selected (selectedCategory === ''), revert to base accent.
+    const activeCategoryColor = categoryColorCoding && selectedCategory
+      ? categoryColorMap[selectedCategory]
+      : undefined;
+
+    // Effective accent: active category color > user-supplied hex > SharePoint theme token
+    const effectiveAccent = activeCategoryColor
+      || (accentColor && accentColor.trim() ? accentColor.trim() : undefined);
 
     // Effective border color: custom hex > darkness slider
     const effectiveBorderColor = colorBorders && colorBorders.trim()
@@ -232,9 +249,6 @@ export default class FaqAccordion extends React.Component<IFaqAccordionMainProps
         : { '--faq-border-width': `${effectiveBorderThickness}px` } as React.CSSProperties),
     };
 
-    // Category → color map for color-coding question text
-    const categoryColorMap = categoryColorCoding ? this._buildCategoryColorMap(categories, activeCategoryColors) : {};
-
     const isFullWidth = (searchPlacement || 'aboveCategories') === 'fullWidth';
     const searchBar = showSearch ? (
       <SearchBar
@@ -254,9 +268,9 @@ export default class FaqAccordion extends React.Component<IFaqAccordionMainProps
         categoryStyle={categoryStyle}
         categoryAlignment={categoryAlignment || 'left'}
         showAll={showAllCategory}
-        colorCoding={categoryColorCoding}
-        colorPalette={activeCategoryColors}
         categoryFontSize={categoryFontSize}
+        colorCoding={categoryColorCoding === true}
+        categoryColorMap={categoryColorMap}
       />
     ) : null;
 
@@ -322,7 +336,7 @@ export default class FaqAccordion extends React.Component<IFaqAccordionMainProps
             )}
 
             {filteredItems.length > 0 && accordionStyle === 'leftNavCard' && (
-              <LeftNavCardLayout items={filteredItems} props={this.props} categoryColorMap={categoryColorMap} />
+              <LeftNavCardLayout items={filteredItems} props={this.props} />
             )}
 
             {filteredItems.length > 0 && accordionStyle !== 'leftNavCard' && (
@@ -349,7 +363,6 @@ export default class FaqAccordion extends React.Component<IFaqAccordionMainProps
                       colorBorders={effectiveBorderColor}
                       borderRadius={borderRadius}
                       borderThickness={effectiveBorderThickness}
-                      categoryColor={categoryColorCoding ? categoryColorMap[item.category] : undefined}
                     />
                   </div>
                 ))}

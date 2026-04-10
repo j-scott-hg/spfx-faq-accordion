@@ -9,14 +9,10 @@ export interface ICategoryBarProps {
   categoryStyle: CategoryStyle;
   categoryAlignment: CategoryAlignment;
   showAll: boolean;
-  colorCoding: boolean;
-  // Active palette resolved by parent (custom or defaults)
-  colorPalette: string[];
   categoryFontSize: number;
+  colorCoding: boolean;
+  categoryColorMap: { [cat: string]: string };
 }
-
-// Grey used for the "All" button when color coding is active
-const ALL_GREY = '#767676';
 
 const CategoryBar: React.FC<ICategoryBarProps> = ({
   categories,
@@ -25,21 +21,11 @@ const CategoryBar: React.FC<ICategoryBarProps> = ({
   categoryStyle,
   categoryAlignment,
   showAll,
-  colorCoding,
-  colorPalette,
   categoryFontSize,
+  colorCoding,
+  categoryColorMap,
 }) => {
-  // "All" is a virtual entry — real categories start at index 0 in the palette
   const allCategories = showAll ? ['All', ...categories] : categories;
-
-  // Returns the palette color for a real category by its position in `categories`.
-  // When color coding is on, "All" is always neutral grey.
-  const getColor = (cat: string): string => {
-    if (!colorCoding) return '';
-    if (cat === 'All') return ALL_GREY;
-    const realIdx = categories.indexOf(cat);
-    return colorPalette[realIdx !== -1 ? realIdx % colorPalette.length : 0];
-  };
 
   const alignKey = (categoryAlignment === 'center'
     ? 'categoryBarCenter'
@@ -54,43 +40,30 @@ const CategoryBar: React.FC<ICategoryBarProps> = ({
     <div className={containerClass} role="tablist" aria-label="FAQ Categories">
       {allCategories.map(cat => {
         const isSelected = cat === selectedCategory || (cat === 'All' && selectedCategory === '');
-        const color = getColor(cat);
+        const isAll = cat === 'All';
+        const color = colorCoding && !isAll ? categoryColorMap[cat] : undefined;
 
-        // Build inline style based on category style variant + color coding state
         let itemStyle: React.CSSProperties = {
           fontSize: categoryFontSize ? `${categoryFontSize}px` : undefined,
         };
 
         if (colorCoding && color) {
-          if (categoryStyle === 'underline') {
-            // Underline: selected = colored bottom border + colored text
-            itemStyle = {
-              ...itemStyle,
-              color: color,
-              borderBottomColor: isSelected ? color : undefined,
-            };
-          } else if (categoryStyle === 'tabs') {
-            // Tabs: selected = colored top accent border + colored text
-            itemStyle = {
-              ...itemStyle,
-              color: color,
-              borderTopColor: isSelected ? color : undefined,
-            };
-          } else {
-            // Pills / chips: fill background with category color when selected
-            if (isSelected) {
-              itemStyle = {
-                ...itemStyle,
-                backgroundColor: color,
-                borderColor: color,
-                color: '#fff',
-              };
+          if (isSelected) {
+            // Selected: fill with category color
+            if (categoryStyle === 'underline') {
+              itemStyle = { ...itemStyle, color, borderBottomColor: color };
+            } else if (categoryStyle === 'tabs') {
+              itemStyle = { ...itemStyle, color, borderTopColor: color };
             } else {
-              itemStyle = {
-                ...itemStyle,
-                borderColor: color,
-                color: color,
-              };
+              // pills / chips: solid fill
+              itemStyle = { ...itemStyle, backgroundColor: color, borderColor: color, color: '#fff' };
+            }
+          } else {
+            // Unselected: show color as text/border hint
+            if (categoryStyle === 'underline' || categoryStyle === 'tabs') {
+              itemStyle = { ...itemStyle, color };
+            } else {
+              itemStyle = { ...itemStyle, borderColor: color, color };
             }
           }
         }
@@ -101,7 +74,7 @@ const CategoryBar: React.FC<ICategoryBarProps> = ({
             role="tab"
             aria-selected={isSelected}
             className={`${styles.categoryItem} ${isSelected ? styles.categoryItemSelected : ''}`}
-            onClick={() => onCategoryChange(cat === 'All' ? '' : cat)}
+            onClick={() => onCategoryChange(isAll ? '' : cat)}
             style={itemStyle}
             type="button"
           >

@@ -399,9 +399,35 @@
   }
 }
 
-.questionText {
+.questionTextWrap {
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.questionText {
   line-height: 1.4;
+}
+
+// Small inline tags shown on items that belong to multiple categories
+.categoryTags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.categoryTag {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 1px 7px;
+  border-radius: 10px;
+  background: var(--faq-accent-light);
+  color: var(--faq-accent);
+  border: 1px solid var(--faq-accent);
+  line-height: 1.6;
+  letter-spacing: 0.01em;
 }
 
 .accordionIcon {

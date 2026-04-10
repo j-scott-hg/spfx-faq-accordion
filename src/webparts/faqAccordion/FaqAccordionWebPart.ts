@@ -108,7 +108,7 @@ export default class FaqAccordionWebPart extends BaseClientSideWebPart<IFaqAccor
       '#0078d4', '#107c10', '#d83b01', '#5c2d91', '#008272',
       '#ca5010', '#004b1c', '#004e8c', '#750b1c', '#4f6bed',
     ];
-    const raw = this.properties.categoryCustomColors;
+    const raw = this.properties.categoryColors;
     if (!raw) return defaults;
     try {
       const parsed = JSON.parse(raw);
@@ -125,18 +125,16 @@ export default class FaqAccordionWebPart extends BaseClientSideWebPart<IFaqAccor
   private _setCategoryColor(slotIndex: number, hex: string): void {
     const colors = this._parseCategoryColors();
     colors[slotIndex] = hex && hex.trim() ? hex.trim() : colors[slotIndex];
-    this.properties.categoryCustomColors = JSON.stringify(colors);
+    this.properties.categoryColors = JSON.stringify(colors);
   }
 
-  private _getCategoryColorFields(): import('@microsoft/sp-property-pane').IPropertyPaneField<unknown>[] {
+  private _getCategoryColorFields(categories: string[]): import('@microsoft/sp-property-pane').IPropertyPaneField<unknown>[] {
     const colors = this._parseCategoryColors();
-    const labels = [
-      'Color 1 (hex)', 'Color 2 (hex)', 'Color 3 (hex)', 'Color 4 (hex)', 'Color 5 (hex)',
-      'Color 6 (hex)', 'Color 7 (hex)', 'Color 8 (hex)', 'Color 9 (hex)', 'Color 10 (hex)',
-    ];
-    return labels.map((label, i) =>
-      PropertyPaneTextField(`categoryCustomColors_slot${i}`, {
-        label,
+    // Show one field per known category (up to 10), labelled with the category name
+    const slots = categories.slice(0, 10);
+    return slots.map((cat, i) =>
+      PropertyPaneTextField(`categoryColors_slot${i}`, {
+        label: `"${cat}" color (hex)`,
         placeholder: colors[i],
         value: colors[i],
         onGetErrorMessage: (value: string) => {
@@ -345,16 +343,16 @@ export default class FaqAccordionWebPart extends BaseClientSideWebPart<IFaqAccor
                 }),
                 PropertyPaneToggle('showAllCategory', {
                   label: 'Show "All" Option',
-                  // Default OFF
                   checked: this.properties.showAllCategory === true,
                 }),
                 PropertyPaneToggle('categoryColorCoding', {
                   label: 'Color-Code Categories',
-                  // Default OFF
                   checked: this.properties.categoryColorCoding === true,
                 }),
                 ...(this.properties.categoryColorCoding === true
-                  ? this._getCategoryColorFields()
+                  ? this._getCategoryColorFields(
+                      ['General', 'Account', 'Billing', 'Technical', 'Other']
+                    )
                   : []),
                 PropertyPaneToggle('showSearch', {
                   label: 'Show Search Bar',

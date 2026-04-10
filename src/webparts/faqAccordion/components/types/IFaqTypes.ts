@@ -22,7 +22,8 @@ export interface IFaqItem {
   id: number;
   title: string;
   answer: string;
-  category: string;
+  // Multi-value: one item can belong to multiple categories
+  categories: string[];
   sortOrder: number;
   isActive: boolean;
   expandedByDefault: boolean;
@@ -58,9 +59,10 @@ export interface IFaqWebPartProps {
   categoryStyle: CategoryStyle;
   categoryAlignment: CategoryAlignment;
   showAllCategory: boolean;
+  // Color coding: when a category is selected its assigned color replaces the accent
   categoryColorCoding: boolean;
-  // JSON-serialised string: array of up to 10 hex codes, one per category slot
-  categoryCustomColors: string;
+  // JSON array of up to 10 hex strings, one per category slot (sorted order)
+  categoryColors: string;
   searchPlaceholder: string;
   searchScope: SearchScope;
   searchAlignment: SearchAlignment;
