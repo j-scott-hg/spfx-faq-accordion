@@ -345,26 +345,25 @@ export default class FaqAccordion extends React.Component<IFaqAccordionMainProps
                 role="list"
               >
                 {filteredItems.map(item => (
-                  <div key={item.id} role="listitem">
-                    <AccordionItem
-                      item={item}
-                      isExpanded={expandedIds.indexOf(item.id) !== -1}
-                      onToggle={this._toggleItem}
-                      iconStyle={iconStyle}
-                      arrowPosition={arrowPosition}
-                      accordionStyle={accordionStyle}
-                      animationEnabled={animationEnabled}
-                      questionFontSize={questionFontSize || 15}
-                      questionStyle={questionStyle}
-                      answerFontSize={answerFontSize || 14}
-                      colorQuestion={colorQuestion && colorQuestion.trim() ? colorQuestion : undefined}
-                      colorAnswer={colorAnswer && colorAnswer.trim() ? colorAnswer : undefined}
-                      colorIcons={colorIcons && colorIcons.trim() ? colorIcons : undefined}
-                      colorBorders={effectiveBorderColor}
-                      borderRadius={borderRadius}
-                      borderThickness={effectiveBorderThickness}
-                    />
-                  </div>
+                  <AccordionItem
+                    key={item.id}
+                    item={item}
+                    isExpanded={expandedIds.indexOf(item.id) !== -1}
+                    onToggle={this._toggleItem}
+                    iconStyle={iconStyle}
+                    arrowPosition={arrowPosition}
+                    accordionStyle={accordionStyle}
+                    animationEnabled={animationEnabled}
+                    questionFontSize={questionFontSize || 15}
+                    questionStyle={questionStyle}
+                    answerFontSize={answerFontSize || 14}
+                    colorQuestion={colorQuestion && colorQuestion.trim() ? colorQuestion : undefined}
+                    colorAnswer={colorAnswer && colorAnswer.trim() ? colorAnswer : undefined}
+                    colorIcons={colorIcons && colorIcons.trim() ? colorIcons : undefined}
+                    colorBorders={effectiveBorderColor}
+                    borderRadius={borderRadius}
+                    borderThickness={effectiveBorderThickness}
+                  />
                 ))}
               </div>
             )}

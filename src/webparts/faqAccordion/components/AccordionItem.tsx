@@ -144,6 +144,7 @@ const AccordionItem: React.FC<IAccordionItemProps> = ({
 
   return (
     <div
+      role="listitem"
       className={`${styles.accordionItem} ${isExpanded ? styles.expanded : ''} ${styles[styleKey] || ''}`}
       style={{
         borderRadius: `${borderRadius}px`,
