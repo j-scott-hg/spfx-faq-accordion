@@ -1,0 +1,565 @@
+@import '~@microsoft/sp-office-ui-fabric-core/dist/sass/SPFabricCore.scss';
+
+// ─── CSS Custom Property Tokens ────────────────────────────────────────────────
+:root {
+  --faq-bg: var(--neutralLighterAlt, #faf9f8);
+  --faq-surface: var(--white, #ffffff);
+  --faq-border: rgba(0, 0, 0, 0.22);
+  --faq-border-width: 1px;
+  --faq-text-primary: var(--neutralPrimary, #323130);
+  --faq-text-secondary: var(--neutralSecondary, #605e5c);
+  --faq-accent: var(--themePrimary, #0078d4);
+  --faq-accent-light: var(--themeLighter, #deecf9);
+  --faq-radius: 4px;
+  --faq-transition: 0.22s ease;
+}
+
+// ─── Wrapper ────────────────────────────────────────────────────────────────────
+.faqWrapper {
+  font-family: var(--bodyText, inherit);
+  color: var(--faq-text-primary);
+  background: transparent;
+  box-sizing: border-box;
+  width: 100%;
+
+  *, *::before, *::after {
+    box-sizing: border-box;
+  }
+
+  &.darkTheme {
+    --faq-bg: #1b1a19;
+    --faq-surface: #252423;
+    --faq-border: rgba(255, 255, 255, 0.25);
+    --faq-text-primary: #f3f2f1;
+    --faq-text-secondary: #c8c6c4;
+    --faq-accent-light: #004578;
+  }
+}
+
+// ─── Title ──────────────────────────────────────────────────────────────────────
+.webPartTitle {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--faq-text-primary);
+  margin: 0 0 20px 0;
+  padding-bottom: 12px;
+  border-bottom: 2px solid var(--faq-accent);
+}
+
+// ─── Loading / Empty ────────────────────────────────────────────────────────────
+.loadingContainer {
+  display: flex;
+  justify-content: center;
+  padding: 40px 0;
+}
+
+.emptyState {
+  color: var(--faq-text-secondary);
+  text-align: center;
+  padding: 32px 16px;
+  font-size: 14px;
+}
+
+// ─── Search Bar ─────────────────────────────────────────────────────────────────
+.searchBar {
+  margin-bottom: 16px;
+  display: flex;
+
+  .searchInput {
+    width: 100%;
+    max-width: 480px;
+  }
+}
+
+// Alignment variants — control where the search box sits horizontally
+.searchBarLeft {
+  justify-content: flex-start;
+}
+
+.searchBarCenter {
+  justify-content: center;
+
+  .searchInput {
+    max-width: 480px;
+    width: 100%;
+  }
+}
+
+.searchBarRight {
+  justify-content: flex-end;
+}
+
+// Full-width: bar stretches edge-to-edge across the entire web part
+.searchBarFullWidth {
+  width: 100%;
+  margin-left: 0;
+  margin-right: 0;
+
+  .searchInput {
+    max-width: 100%;
+    width: 100%;
+  }
+
+  // Override Fluent UI SearchBox to fill container
+  :global(.ms-SearchBox) {
+    width: 100%;
+    max-width: 100%;
+  }
+}
+
+// ─── Category Bar — base ────────────────────────────────────────────────────────
+.categoryBar {
+  display: flex;
+  flex-wrap: wrap;        // wrap instead of scroll
+  overflow: visible;      // no scrollbar ever
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+// Alignment helpers
+.categoryBarLeft   { justify-content: flex-start; }
+.categoryBarCenter { justify-content: center; }
+.categoryBarRight  { justify-content: flex-end; }
+
+// Base button reset — each style variant overrides fully
+.categoryItem {
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all var(--faq-transition);
+  background: transparent;
+  border: none;
+  padding: 0;
+  line-height: 1;
+
+  &:focus-visible {
+    outline: 2px solid var(--faq-accent);
+    outline-offset: 2px;
+  }
+}
+
+// ── TABS ─────────────────────────────────────────────────────────────────────────
+// Raised tab style: each tab is a bordered box; selected tab has a solid top accent
+// bar, white/surface background, and its bottom border is removed so it "merges"
+// with the content area below.
+.categoryBar_tabs {
+  border-bottom: 2px solid var(--faq-border);
+  gap: 4px;
+  flex-wrap: wrap;
+  overflow: visible;
+  align-items: flex-end;  // tabs sit on the baseline
+
+  .categoryItem {
+    padding: 8px 20px;
+    border: 1px solid transparent;
+    border-bottom: none;
+    border-radius: 6px 6px 0 0;
+    margin-bottom: -2px;
+    color: var(--faq-text-secondary);
+    background: transparent;
+    font-weight: 500;
+    white-space: nowrap;
+    box-shadow: none;
+    transition: background var(--faq-transition), color var(--faq-transition), border-color var(--faq-transition);
+
+    &:hover {
+      color: var(--faq-text-primary);
+      background: var(--faq-accent-light);
+      border-color: var(--faq-border);
+    }
+  }
+
+  .categoryItemSelected {
+    // color/background/border intentionally NOT !important — inline styles override when color coding is ON
+    color: var(--faq-text-primary);
+    background: var(--faq-surface);
+    border-color: var(--faq-border);
+    border-top: 3px solid var(--faq-accent);
+    font-weight: 700;
+    // Pull down to cover the container's bottom border, making tab appear "open"
+    margin-bottom: -2px;
+    padding-top: 6px; // compensate for the thicker top border
+  }
+}
+
+// ── PILLS ─────────────────────────────────────────────────────────────────────────
+.categoryBar_pills {
+  .categoryItem {
+    padding: 6px 18px;
+    border-radius: 100px;
+    border: 2px solid var(--faq-border);
+    color: var(--faq-text-primary);
+    background: var(--faq-surface);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.10), 0 1px 2px rgba(0, 0, 0, 0.06);
+
+    &:hover {
+      border-color: var(--faq-accent);
+      color: var(--faq-accent);
+      background: var(--faq-accent-light);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.14);
+    }
+  }
+
+  .categoryItemSelected {
+    // color/background/border intentionally NOT !important — inline styles override when color coding is ON
+    background: var(--faq-accent);
+    border-color: var(--faq-accent);
+    color: #fff;
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(0, 120, 212, 0.35);
+  }
+}
+
+// ── UNDERLINE ─────────────────────────────────────────────────────────────────────
+.categoryBar_underline {
+  border-bottom: 2px solid var(--faq-border);
+  gap: 0;
+  padding-bottom: 0;
+  flex-wrap: wrap;
+  overflow: visible;
+
+  .categoryItem {
+    padding: 8px 16px;
+    border-bottom: 3px solid transparent;
+    margin-bottom: -2px;
+    color: var(--faq-text-secondary);
+    background: transparent;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+    box-shadow: none;
+
+    &:hover {
+      color: var(--faq-text-primary);
+      border-bottom-color: rgba(0, 0, 0, 0.2);
+    }
+  }
+
+  .categoryItemSelected {
+    // color/border intentionally NOT !important — inline styles override when color coding is ON
+    color: var(--faq-text-primary);
+    border-bottom-color: var(--faq-accent);
+    font-weight: 700;
+  }
+}
+
+// ── CHIPS ─────────────────────────────────────────────────────────────────────────
+.categoryBar_chips {
+  gap: 6px;
+
+  .categoryItem {
+    padding: 5px 14px;
+    border-radius: 4px;
+    border: 2px solid var(--faq-border);
+    background: var(--faq-surface);
+    color: var(--faq-text-primary);
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.10), 0 1px 2px rgba(0, 0, 0, 0.06);
+
+    &:hover {
+      background: var(--faq-accent-light);
+      border-color: var(--faq-accent);
+      color: var(--faq-accent);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.14);
+    }
+  }
+
+  .categoryItemSelected {
+    // color/background/border intentionally NOT !important — inline styles override when color coding is ON
+    background: var(--faq-accent);
+    border-color: var(--faq-accent);
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(0, 120, 212, 0.35);
+  }
+}
+
+// ─── Accordion List ─────────────────────────────────────────────────────────────
+.accordionList {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.accordionList_cardStack {
+  gap: 10px;
+}
+
+.accordionList_pillPanel {
+  gap: 8px;
+}
+
+// ─── Accordion Item ─────────────────────────────────────────────────────────────
+.accordionItem {
+  border-bottom: var(--faq-border-width) solid var(--faq-border);
+  background: transparent;
+  overflow: hidden;
+
+  &:first-child {
+    border-top: var(--faq-border-width) solid var(--faq-border);
+  }
+
+  &.expanded {
+    .accordionHeader {
+      color: var(--faq-accent);
+    }
+  }
+}
+
+// Card Stack style
+// Signature look: prominent 4px left accent bar, elevated shadow that lifts on
+// hover/expand, slightly tinted card background, accent-filled header when open.
+// Color coding OFF → accent color drives the left bar + expanded header fill.
+// Color coding ON  → category color overrides the left bar (via inline style).
+.style_cardStack {
+  background: var(--neutralLighterAlt, #faf9f8);
+  border: var(--faq-border-width) solid var(--faq-border) !important;
+  border-left: 4px solid var(--faq-accent) !important;
+  border-radius: var(--faq-radius);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.05);
+  transition: box-shadow var(--faq-transition), border-left-color var(--faq-transition);
+
+  &:first-child {
+    border-top: var(--faq-border-width) solid var(--faq-border) !important;
+  }
+
+  &:hover {
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.13), 0 2px 6px rgba(0, 0, 0, 0.07);
+  }
+
+  &.expanded {
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.15), 0 3px 10px rgba(0, 0, 0, 0.07);
+
+    // Expanded header: solid accent-light fill + accent-colored text (via base rule)
+    .accordionHeader {
+      background: var(--faq-accent-light);
+      border-left: 3px solid var(--faq-accent);
+      padding-left: 17px; // compensate for the inner left border
+    }
+  }
+
+  // Answer area indented to align under the inner accent border
+  .answerContent {
+    padding-left: 28px;
+  }
+}
+
+// Pill Panel style
+// Signature look: fully rounded panels with an accent border always visible.
+// Header tint only appears on hover or when expanded — not at rest.
+// Color coding OFF → accent color drives border + hover/expanded tint.
+// Color coding ON  → category color overrides border + tint (via inline style).
+.style_pillPanel {
+  background: var(--faq-surface);
+  border: 2px solid var(--faq-accent) !important;
+  border-radius: 8px !important;
+  overflow: hidden;
+  transition: box-shadow var(--faq-transition);
+
+  &:first-child {
+    border-top: 2px solid var(--faq-accent) !important;
+  }
+
+  &:hover .accordionHeader {
+    background: var(--faq-accent-light);
+  }
+
+  &.expanded {
+    border-color: var(--faq-accent) !important;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.10);
+
+    .accordionHeader {
+      background: var(--faq-accent-light);
+    }
+  }
+}
+
+// ─── Accordion Header ───────────────────────────────────────────────────────────
+.accordionHeader {
+  display: flex;
+  align-items: center;
+  padding: 16px 20px;
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--faq-text-primary);
+  user-select: none;
+  transition: background var(--faq-transition), color var(--faq-transition);
+  gap: 12px;
+  min-height: 52px;
+
+  &:hover {
+    background: var(--faq-accent-light);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--faq-accent);
+    outline-offset: -2px;
+  }
+}
+
+.questionText {
+  flex: 1;
+  line-height: 1.4;
+}
+
+.accordionIcon {
+  font-size: 12px;
+  flex-shrink: 0;
+  transition: transform var(--faq-transition);
+  color: var(--faq-text-secondary);
+}
+
+.iconLeft {
+  order: -1;
+}
+
+.iconRight {
+  order: 1;
+}
+
+// ─── Accordion Body ─────────────────────────────────────────────────────────────
+.accordionBody {
+  max-height: 0;
+  overflow: hidden;
+  visibility: hidden;
+
+  &.accordionBodyOpen {
+    max-height: 2000px;
+    visibility: visible;
+  }
+
+  &.animated {
+    transition: max-height 0.3s ease, visibility 0.3s ease;
+  }
+}
+
+.answerContent {
+  padding: 4px 20px 20px 20px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--faq-text-secondary);
+
+  p {
+    margin: 0 0 10px 0;
+    &:last-child { margin-bottom: 0; }
+  }
+
+  ul, ol {
+    padding-left: 20px;
+    margin: 8px 0;
+  }
+
+  a {
+    color: var(--faq-accent);
+    text-decoration: none;
+    &:hover { text-decoration: underline; }
+  }
+}
+
+// ─── Left Nav + Card Layout ─────────────────────────────────────────────────────
+.leftNavLayout {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 20px;
+  min-height: 300px;
+
+  @media (max-width: 640px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.leftNavList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border-right: var(--faq-border-width) solid var(--faq-border);
+  padding-right: 16px;
+
+  @media (max-width: 640px) {
+    border-right: none;
+    border-bottom: var(--faq-border-width) solid var(--faq-border);
+    padding-right: 0;
+    padding-bottom: 16px;
+  }
+}
+
+.leftNavItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  cursor: pointer;
+  border-radius: 4px;
+  border: 1px solid transparent;
+  transition: all var(--faq-transition);
+  gap: 8px;
+
+  &:hover {
+    background: var(--faq-accent-light);
+    border-color: var(--faq-border);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--faq-accent);
+    outline-offset: -2px;
+  }
+}
+
+.leftNavItemSelected {
+  // color/background/border intentionally NOT !important — inline styles override when color coding is ON
+  background: var(--faq-accent-light);
+  border-color: var(--faq-accent);
+
+  .leftNavQuestion {
+    color: var(--faq-accent);
+    font-weight: 600;
+  }
+}
+
+.leftNavQuestion {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--faq-text-primary);
+  flex: 1;
+  line-height: 1.4;
+}
+
+.leftNavArrow {
+  font-size: 11px;
+  color: var(--faq-text-secondary);
+  flex-shrink: 0;
+}
+
+.leftNavDetail {
+  background: var(--faq-surface);
+  border: var(--faq-border-width) solid var(--faq-border);
+  border-radius: 8px;
+  padding: 24px 28px;
+}
+
+.leftNavDetailQuestion {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--faq-text-primary);
+  margin: 0 0 16px 0;
+  line-height: 1.3;
+}
+
+.leftNavDetailAnswer {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--faq-text-secondary);
+
+  p { margin: 0 0 10px 0; &:last-child { margin-bottom: 0; } }
+  ul, ol { padding-left: 20px; margin: 8px 0; }
+  a { color: var(--faq-accent); text-decoration: none; &:hover { text-decoration: underline; } }
+}
+
+// ─── Style variant: style_leftNavCard ───────────────────────────────────────────
+.style_leftNavCard {
+  .accordionList {
+    display: none;
+  }
+}

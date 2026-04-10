@@ -1,0 +1,44 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/spfx-build/package-solution.schema.json",
+  "solution": {
+    "name": "FAQ - Accordion",
+    "id": "570882ba-3e48-433b-be7d-89294cf17cad",
+    "version": "1.1.7.0",
+    "includeClientSideAssets": true,
+    "skipFeatureDeployment": true,
+    "isDomainIsolated": false,
+    "iconPath": "images/faq-accordion-icon.png",
+    "webApiPermissionRequests": [],
+    "developer": {
+      "name": "JScott",
+      "websiteUrl": "",
+      "privacyUrl": "",
+      "termsOfUseUrl": "",
+      "mpnId": "Undefined-1.20.0"
+    },
+    "metadata": {
+      "shortDescription": {
+        "default": "Interactive FAQ accordion web part connected to a SharePoint list with search, categories, and multiple layout styles."
+      },
+      "longDescription": {
+        "default": "Display frequently asked questions in a modern, accessible accordion layout. Supports multiple visual styles, category filtering, live search, and auto-provisioning of the backing SharePoint list."
+      },
+      "screenshotPaths": [
+        "images/faq-accordion-icon.png"
+      ],
+      "videoUrl": "",
+      "categories": ["Productivity"]
+    },
+    "features": [
+      {
+        "title": "FAQ - Accordion Feature",
+        "description": "Activates the FAQ - Accordion web part.",
+        "id": "db50c6bb-409d-4b10-b007-79af3120b110",
+        "version": "1.0.0.0"
+      }
+    ]
+  },
+  "paths": {
+    "zippedPackage": "solution/faq-accordion.sppkg"
+  }
+}

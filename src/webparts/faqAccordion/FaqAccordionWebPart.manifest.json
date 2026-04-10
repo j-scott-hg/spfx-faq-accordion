@@ -1,0 +1,35 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/spfx/client-side-web-part-manifest.schema.json",
+  "id": "2091eed8-5b61-42c5-be52-abee5b65234d",
+  "alias": "FaqAccordionWebPart",
+  "componentType": "WebPart",
+
+  // The "*" signifies that the version should be taken from the package.json
+  "version": "*",
+  "manifestVersion": 2,
+
+  // If true, the component can only be installed on sites where Custom Script is allowed.
+  // Components that allow authors to embed arbitrary script code should set this to true.
+  // https://support.office.com/en-us/article/Turn-scripting-capabilities-on-or-off-1f2c515f-5d7e-448a-9fd7-835da935584f
+  "requiresCustomScript": false,
+  "supportedHosts": ["SharePointWebPart", "TeamsPersonalApp", "TeamsTab", "SharePointFullPage"],
+  "supportsThemeVariants": true,
+
+  "preconfiguredEntries": [{
+    "groupId": "cf066440-0614-43d6-98ae-0b31cf14c7c3", // Text, media, and content
+    "group": { "default": "Text, media, and content" },
+    "title": { "default": "FAQ - Accordion" },
+    "description": { "default": "Display frequently asked questions in an interactive, filterable accordion layout connected to a SharePoint list." },
+    "officeFabricIconFontName": "Questionnaire",
+    "properties": {
+      "description": "FAQ - Accordion",
+      "arrowPosition": "right",
+      "iconStyle": "chevron",
+      "expandMode": "single",
+      "animationEnabled": true,
+      "showDividers": true,
+      "showTitle": false,
+      "accordionStyle": "minimal"
+    }
+  }]
+}

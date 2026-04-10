@@ -1,0 +1,50 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+
+# Dependency directories
+node_modules
+
+# Build generated files
+dist
+lib
+release
+temp
+.heft
+
+# SPFx packaged solution output (binary — not committed)
+sharepoint/solution/
+*.sppkg
+
+# Coverage
+coverage
+
+# OSX
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Visual Studio / VS Code local files
+.ntvs_analysis.dat
+.vs
+bin
+obj
+*.user
+
+# Resx Generated Code
+*.resx.ts
+
+# Styles Generated Code
+*.scss.ts
+
+# Environment / secrets
+.env
+.env.local
