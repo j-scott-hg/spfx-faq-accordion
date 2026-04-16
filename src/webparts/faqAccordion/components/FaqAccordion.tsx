@@ -9,6 +9,15 @@ import SearchBar from './SearchBar';
 import LeftNavCardLayout from './LeftNavCardLayout';
 import styles from './FaqAccordion.module.scss';
 
+function parseJsonArray(raw: string): string[] {
+  if (!raw) return [];
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (Array.isArray(parsed)) return (parsed as string[]).filter(s => !!s);
+  } catch { /* fall through */ }
+  return [];
+}
+
 const DEFAULT_CATEGORY_COLORS = [
   '#0078d4', '#107c10', '#d83b01', '#5c2d91', '#008272',
   '#ca5010', '#004b1c', '#004e8c', '#750b1c', '#4f6bed',
@@ -141,10 +150,24 @@ export default class FaqAccordion extends React.Component<IFaqAccordionMainProps
   };
 
   private _getFilteredItems(): IFaqItem[] {
-    const { searchScope } = this.props;
+    const { searchScope, visibleCategories } = this.props;
     const { items, selectedCategory, searchQuery } = this.state;
 
+    // Parse which categories are visible (empty array = all visible)
+    const visibleList = parseJsonArray(visibleCategories);
+
     let filtered = items;
+
+    // If editor has restricted visible categories, hide items that have NO
+    // visible category (i.e. all their categories are hidden)
+    if (visibleList.length > 0) {
+      filtered = filtered.filter(i => {
+        // Item is visible if at least one of its categories is in the visible list,
+        // OR if it has no categories at all (uncategorised items always show)
+        if (!i.categories || i.categories.length === 0) return true;
+        return i.categories.some((cat: string) => visibleList.indexOf(cat) !== -1);
+      });
+    }
 
     // Multi-category: show item if any of its categories matches the selected filter
     if (selectedCategory) {
@@ -187,6 +210,7 @@ export default class FaqAccordion extends React.Component<IFaqAccordionMainProps
     const {
       showTitle, titleText, titleAlignment, titleFontSize, showCategories, showSearch, categoryStyle,
       categoryAlignment, showAllCategory, categoryColorCoding, categoryColors,
+      visibleCategories, categoryOrder,
       searchPlaceholder, searchPlacement, searchAlignment, accordionStyle, arrowPosition, iconStyle, animationEnabled,
       questionFontSize, questionStyle, answerFontSize, categoryFontSize,
       accentColor, colorTitle, colorQuestion, colorAnswer,
@@ -195,6 +219,20 @@ export default class FaqAccordion extends React.Component<IFaqAccordionMainProps
     } = this.props;
 
     const { loading, error, expandedIds, selectedCategory, searchQuery, categories } = this.state;
+
+    // Apply visibility filter: only show categories the editor has enabled
+    const visibleList = parseJsonArray(visibleCategories);
+    const visibleCats = visibleList.length > 0
+      ? categories.filter(c => visibleList.indexOf(c) !== -1)
+      : categories;
+
+    // Apply custom order: editor-defined order first, then any remaining alphabetically
+    const orderList = parseJsonArray(categoryOrder);
+    const orderedCats = orderList.length > 0
+      ? orderList.filter(c => visibleCats.indexOf(c) !== -1)
+          .concat(visibleCats.filter(c => orderList.indexOf(c) === -1))
+      : visibleCats;
+
     const filteredItems = this._getFilteredItems();
 
     const styleKey = `style_${accordionStyle}` as keyof typeof styles;
@@ -208,6 +246,7 @@ export default class FaqAccordion extends React.Component<IFaqAccordionMainProps
     const parsedCategoryColors = parseCategoryColorPalette(categoryColors);
 
     // Build a stable map: sorted category name → assigned color
+    // Use the full sorted categories list so color slots stay consistent
     const categoryColorMap: { [cat: string]: string } = {};
     categories.forEach((cat, idx) => {
       categoryColorMap[cat] = parsedCategoryColors[idx % parsedCategoryColors.length];
@@ -260,9 +299,9 @@ export default class FaqAccordion extends React.Component<IFaqAccordionMainProps
       />
     ) : null;
 
-    const categoryBar = showCategories && categories.length > 0 ? (
+    const categoryBar = showCategories && orderedCats.length > 0 ? (
       <CategoryBar
-        categories={categories}
+        categories={orderedCats}
         selectedCategory={selectedCategory}
         onCategoryChange={(cat) => this.setState({ selectedCategory: cat })}
         categoryStyle={categoryStyle}

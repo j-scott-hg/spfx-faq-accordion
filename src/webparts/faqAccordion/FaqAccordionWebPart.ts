@@ -28,6 +28,8 @@ export default class FaqAccordionWebPart extends BaseClientSideWebPart<IFaqAccor
   private _lists: IListInfo[] = [];
   private _listProvisionMessage: string = '';
   private _service: FaqListService | undefined;
+  // Categories loaded from the list for use in property pane controls
+  private _availableCategories: string[] = [];
 
   protected async onInit(): Promise<void> {
     this._service = new FaqListService(this.context);
@@ -96,11 +98,145 @@ export default class FaqAccordionWebPart extends BaseClientSideWebPart<IFaqAccor
 
   protected async onPropertyPaneConfigurationStart(): Promise<void> {
     await this._loadLists();
+    await this._loadAvailableCategories();
     this.context.propertyPane.refresh();
+  }
+
+  private async _loadAvailableCategories(): Promise<void> {
+    if (!this._service || !this.properties.listName) return;
+    try {
+      this._availableCategories = await this._service.getCategories(this.properties.listName);
+    } catch {
+      this._availableCategories = [];
+    }
   }
 
   private _getListOptions(): IPropertyPaneDropdownOption[] {
     return this._lists.map(l => ({ key: l.Title, text: l.Title }));
+  }
+
+  // ── Visible Categories helpers ──────────────────────────────────────────────
+
+  private _parseJsonArray(raw: string): string[] {
+    if (!raw) return [];
+    try {
+      const p = JSON.parse(raw);
+      if (Array.isArray(p)) return (p as string[]).filter(s => !!s);
+    } catch { /* ignore */ }
+    return [];
+  }
+
+  private _getVisibleCategories(): string[] {
+    return this._parseJsonArray(this.properties.visibleCategories);
+  }
+
+  private _toggleVisibleCategory(cat: string): void {
+    const current = this._getVisibleCategories();
+    const idx = current.indexOf(cat);
+    if (idx === -1) {
+      current.push(cat);
+    } else {
+      current.splice(idx, 1);
+    }
+    this.properties.visibleCategories = JSON.stringify(current);
+    this.context.propertyPane.refresh();
+    this.render();
+  }
+
+  private _getCategoryOrder(): string[] {
+    const order = this._parseJsonArray(this.properties.categoryOrder);
+    // Merge: put ordered items first, append any new categories not yet in the order list
+    const all = this._availableCategories;
+    const merged = order.filter(c => all.indexOf(c) !== -1);
+    all.forEach(c => { if (merged.indexOf(c) === -1) merged.push(c); });
+    return merged;
+  }
+
+  private _moveCategoryUp(cat: string): void {
+    const order = this._getCategoryOrder();
+    const idx = order.indexOf(cat);
+    if (idx <= 0) return;
+    order.splice(idx, 1);
+    order.splice(idx - 1, 0, cat);
+    this.properties.categoryOrder = JSON.stringify(order);
+    this.context.propertyPane.refresh();
+    this.render();
+  }
+
+  private _moveCategoryDown(cat: string): void {
+    const order = this._getCategoryOrder();
+    const idx = order.indexOf(cat);
+    if (idx === -1 || idx >= order.length - 1) return;
+    order.splice(idx, 1);
+    order.splice(idx + 1, 0, cat);
+    this.properties.categoryOrder = JSON.stringify(order);
+    this.context.propertyPane.refresh();
+    this.render();
+  }
+
+  // ── Category visibility + order property pane fields ────────────────────────
+
+  private _getCategoryVisibilityFields(): import('@microsoft/sp-property-pane').IPropertyPaneField<unknown>[] {
+    const cats = this._getCategoryOrder();
+    const visible = this._getVisibleCategories();
+    const isFiltered = visible.length > 0;
+
+    if (cats.length === 0) {
+      return [
+        PropertyPaneLabel('noCatsLabel', {
+          text: 'Open the property pane after selecting a list to manage categories.',
+        }),
+      ];
+    }
+
+    const fields: import('@microsoft/sp-property-pane').IPropertyPaneField<unknown>[] = [];
+
+    fields.push(
+      PropertyPaneLabel('catVisibilityHint', {
+        text: isFiltered
+          ? `Showing ${visible.length} of ${cats.length} categories. Uncheck all to show every category.`
+          : `All ${cats.length} categories visible. Check items below to restrict which ones appear.`,
+      })
+    );
+
+    cats.forEach((cat, idx) => {
+      const isVisible = !isFiltered || visible.indexOf(cat) !== -1;
+      // Toggle checkbox
+      fields.push(
+        PropertyPaneToggle(`catVisible_${idx}`, {
+          label: cat,
+          checked: isVisible,
+          onText: 'Visible',
+          offText: 'Hidden',
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          onChange: (_key: string, _newValue: any) => {
+            this._toggleVisibleCategory(cat);
+          },
+        } as import('@microsoft/sp-property-pane').IPropertyPaneToggleProps)
+      );
+      // Up button (disabled for first item)
+      if (idx > 0) {
+        fields.push(
+          PropertyPaneButton(`catUp_${idx}`, {
+            text: `↑ Move "${cat}" up`,
+            buttonType: PropertyPaneButtonType.Normal,
+            onClick: () => { this._moveCategoryUp(cat); return ''; },
+          })
+        );
+      }
+      // Down button (disabled for last item)
+      if (idx < cats.length - 1) {
+        fields.push(
+          PropertyPaneButton(`catDown_${idx}`, {
+            text: `↓ Move "${cat}" down`,
+            buttonType: PropertyPaneButtonType.Normal,
+            onClick: () => { this._moveCategoryDown(cat); return ''; },
+          })
+        );
+      }
+    });
+
+    return fields;
   }
 
   private _parseCategoryColors(): string[] {
@@ -393,7 +529,16 @@ export default class FaqAccordionWebPart extends BaseClientSideWebPart<IFaqAccor
               ],
             },
 
-            // ── 5. Appearance ──────────────────────────────────────────────
+            // ── 5. Category Visibility & Order ─────────────────────────────
+            {
+              groupName: '📂 Category Visibility & Order',
+              isCollapsed: true,
+              groupFields: [
+                ...this._getCategoryVisibilityFields(),
+              ],
+            },
+
+            // ── 6. Appearance ──────────────────────────────────────────────
             {
               groupName: '🖌️ Appearance',
               isCollapsed: true,

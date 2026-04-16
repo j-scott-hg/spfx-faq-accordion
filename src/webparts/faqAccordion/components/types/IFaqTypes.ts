@@ -63,6 +63,10 @@ export interface IFaqWebPartProps {
   categoryColorCoding: boolean;
   // JSON array of up to 10 hex strings, one per category slot (sorted order)
   categoryColors: string;
+  // JSON array of category names the editor has chosen to show (empty = show all)
+  visibleCategories: string;
+  // JSON array of category names defining display order (empty = alphabetical)
+  categoryOrder: string;
   searchPlaceholder: string;
   searchScope: SearchScope;
   searchAlignment: SearchAlignment;
