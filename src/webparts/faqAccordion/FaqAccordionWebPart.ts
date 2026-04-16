@@ -17,7 +17,7 @@ import { IReadonlyTheme } from '@microsoft/sp-component-base';
 
 import FaqAccordion from './components/FaqAccordion';
 import { IFaqWebPartProps } from './components/types/IFaqTypes';
-import { FaqListService, IListInfo } from './services/FaqListService';
+import { FaqListService, IListInfo, IListViewInfo, IListColumnInfo } from './services/FaqListService';
 
 export interface IFaqAccordionWebPartProps extends IFaqWebPartProps {
   // Extends the shared props interface
@@ -30,6 +30,9 @@ export default class FaqAccordionWebPart extends BaseClientSideWebPart<IFaqAccor
   private _service: FaqListService | undefined;
   // Categories loaded from the list for use in property pane controls
   private _availableCategories: string[] = [];
+  // Views and columns for property pane dropdowns
+  private _availableViews: IListViewInfo[] = [];
+  private _filterableColumns: IListColumnInfo[] = [];
 
   protected async onInit(): Promise<void> {
     this._service = new FaqListService(this.context);
@@ -98,7 +101,10 @@ export default class FaqAccordionWebPart extends BaseClientSideWebPart<IFaqAccor
 
   protected async onPropertyPaneConfigurationStart(): Promise<void> {
     await this._loadLists();
-    await this._loadAvailableCategories();
+    await Promise.all([
+      this._loadAvailableCategories(),
+      this._loadViewsAndColumns(),
+    ]);
     this.context.propertyPane.refresh();
   }
 
@@ -108,6 +114,21 @@ export default class FaqAccordionWebPart extends BaseClientSideWebPart<IFaqAccor
       this._availableCategories = await this._service.getCategories(this.properties.listName);
     } catch {
       this._availableCategories = [];
+    }
+  }
+
+  private async _loadViewsAndColumns(): Promise<void> {
+    if (!this._service || !this.properties.listName) return;
+    try {
+      const [views, cols] = await Promise.all([
+        this._service.getListViews(this.properties.listName),
+        this._service.getFilterableColumns(this.properties.listName),
+      ]);
+      this._availableViews = views;
+      this._filterableColumns = cols;
+    } catch {
+      this._availableViews = [];
+      this._filterableColumns = [];
     }
   }
 
@@ -321,6 +342,22 @@ export default class FaqAccordionWebPart extends BaseClientSideWebPart<IFaqAccor
                     ? `✅ Connected: ${this.properties.listName}`
                     : '⚠️ No list selected',
                 }),
+                // ── View Selector (Option F) ──
+                ...(this._availableViews.length > 0 ? [
+                  PropertyPaneDropdown('selectedView', {
+                    label: 'List View (optional)',
+                    options: [
+                      { key: '', text: '— Default (all items) —' },
+                      ...this._availableViews.map(v => ({ key: v.Title, text: v.DefaultView ? `${v.Title} (default)` : v.Title })),
+                    ],
+                    selectedKey: this.properties.selectedView || '',
+                  }),
+                  PropertyPaneLabel('selectedViewHint', {
+                    text: this.properties.selectedView
+                      ? `Items are scoped to the "${this.properties.selectedView}" view.`
+                      : 'All items shown. Select a view to filter by its built-in criteria.',
+                  }),
+                ] : []),
               ],
             },
 
@@ -529,7 +566,45 @@ export default class FaqAccordionWebPart extends BaseClientSideWebPart<IFaqAccor
               ],
             },
 
-            // ── 5. Category Visibility & Order ─────────────────────────────
+            // ── 5. Secondary Filter Bar (Option B) ─────────────────────────
+            {
+              groupName: '🔎 Secondary Filter Bar',
+              isCollapsed: true,
+              groupFields: [
+                PropertyPaneToggle('filterBarEnabled', {
+                  label: 'Show Secondary Filter Bar',
+                  checked: this.properties.filterBarEnabled === true,
+                  onText: 'On',
+                  offText: 'Off',
+                }),
+                ...(this.properties.filterBarEnabled ? [
+                  ...(this._filterableColumns.length > 0 ? [
+                    PropertyPaneDropdown('filterColumn', {
+                      label: 'Filter by Column',
+                      options: [
+                        { key: '', text: '— Select a column —' },
+                        ...this._filterableColumns.map(c => ({ key: c.InternalName, text: c.Title })),
+                      ],
+                      selectedKey: this.properties.filterColumn || '',
+                    }),
+                    PropertyPaneTextField('filterColumnLabel', {
+                      label: 'Filter Bar Label (optional)',
+                      placeholder: this.properties.filterColumn
+                        ? (this._filterableColumns.find(c => c.InternalName === this.properties.filterColumn) || { Title: '' }).Title
+                        : 'e.g. Audience',
+                      value: this.properties.filterColumnLabel || '',
+                      description: 'Label shown to the left of the filter chips. Leave blank to use the column name.',
+                    }),
+                  ] : [
+                    PropertyPaneLabel('noColsLabel', {
+                      text: 'No filterable columns found. Add Choice or Yes/No columns to the list.',
+                    }),
+                  ]),
+                ] : []),
+              ],
+            },
+
+            // ── 6. Category Visibility & Order ─────────────────────────────
             {
               groupName: '📂 Category Visibility & Order',
               isCollapsed: true,

@@ -5,6 +5,7 @@ import { IFaqAccordionMainProps, IFaqItem } from './types/IFaqTypes';
 import { FaqListService } from '../services/FaqListService';
 import AccordionItem from './AccordionItem';
 import CategoryBar from './CategoryBar';
+import FilterBar from './FilterBar';
 import SearchBar from './SearchBar';
 import LeftNavCardLayout from './LeftNavCardLayout';
 import styles from './FaqAccordion.module.scss';
@@ -46,6 +47,9 @@ interface IFaqAccordionState {
   expandedIds: number[];
   selectedCategory: string;
   searchQuery: string;
+  // Secondary filter bar state
+  filterColumnValues: string[];  // distinct values for the chosen filter column
+  selectedFilterValue: string;   // currently active secondary filter value
 }
 
 export default class FaqAccordion extends React.Component<IFaqAccordionMainProps, IFaqAccordionState> {
@@ -62,6 +66,8 @@ export default class FaqAccordion extends React.Component<IFaqAccordionMainProps
       expandedIds: [],
       selectedCategory: '',
       searchQuery: '',
+      filterColumnValues: [],
+      selectedFilterValue: '',
     };
   }
 
@@ -75,7 +81,9 @@ export default class FaqAccordion extends React.Component<IFaqAccordionMainProps
       prevProps.sortField !== this.props.sortField ||
       prevProps.sortDirection !== this.props.sortDirection ||
       prevProps.showOnlyActive !== this.props.showOnlyActive ||
-      prevProps.maxItems !== this.props.maxItems;
+      prevProps.maxItems !== this.props.maxItems ||
+      prevProps.selectedView !== this.props.selectedView ||
+      prevProps.filterColumn !== this.props.filterColumn;
 
     if (relevantChanged) {
       this._loadData().catch(e => console.error(e));
@@ -83,21 +91,25 @@ export default class FaqAccordion extends React.Component<IFaqAccordionMainProps
   }
 
   private async _loadData(): Promise<void> {
-    const { listName, sortField, sortDirection, showOnlyActive, maxItems, expandFirstItem } = this.props;
+    const { listName, sortField, sortDirection, showOnlyActive, maxItems, expandFirstItem, selectedView, filterColumn, filterBarEnabled } = this.props;
 
     if (!listName) {
-      this.setState({ items: [], categories: [], loading: false, error: '' });
+      this.setState({ items: [], categories: [], loading: false, error: '', filterColumnValues: [] });
       return;
     }
 
     this.setState({ loading: true, error: '' });
 
     try {
-      // Fetch items and field-defined choices in parallel
-      const [items, fieldChoices] = await Promise.all([
-        this._service.getItems(listName, sortField || 'SortOrder', sortDirection || 'asc', showOnlyActive, maxItems || 500),
+      // Fetch items (scoped to view if set), field choices, and filter column values in parallel
+      const promises: [Promise<IFaqItem[]>, Promise<string[]>, Promise<string[]>] = [
+        this._service.getItems(listName, sortField || 'SortOrder', sortDirection || 'asc', showOnlyActive, maxItems || 500, selectedView || undefined, filterBarEnabled && filterColumn ? [filterColumn] : []),
         this._service.getCategories(listName),
-      ]);
+        filterBarEnabled && filterColumn
+          ? this._service.getColumnValues(listName, filterColumn)
+          : Promise.resolve([]),
+      ];
+      const [items, fieldChoices, filterColumnValues] = await Promise.all(promises);
 
       // Merge field choices with any values actually used in items (handles custom/legacy values)
       const seen: { [key: string]: boolean } = {};
@@ -125,7 +137,7 @@ export default class FaqAccordion extends React.Component<IFaqAccordionMainProps
         expandedIds = [expandedIds[0]];
       }
 
-      this.setState({ items, categories, loading: false, expandedIds });
+      this.setState({ items, categories, loading: false, expandedIds, filterColumnValues });
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       this.setState({ loading: false, error: `Failed to load FAQ items: ${msg}` });
@@ -150,8 +162,8 @@ export default class FaqAccordion extends React.Component<IFaqAccordionMainProps
   };
 
   private _getFilteredItems(): IFaqItem[] {
-    const { searchScope, visibleCategories } = this.props;
-    const { items, selectedCategory, searchQuery } = this.state;
+    const { searchScope, visibleCategories, filterBarEnabled, filterColumn } = this.props;
+    const { items, selectedCategory, searchQuery, selectedFilterValue } = this.state;
 
     // Parse which categories are visible (empty array = all visible)
     const visibleList = parseJsonArray(visibleCategories);
@@ -172,6 +184,21 @@ export default class FaqAccordion extends React.Component<IFaqAccordionMainProps
     // Multi-category: show item if any of its categories matches the selected filter
     if (selectedCategory) {
       filtered = filtered.filter(i => i.categories.indexOf(selectedCategory) !== -1);
+    }
+
+    // Secondary column filter — match against the extra field stored on each item
+    if (filterBarEnabled && filterColumn && selectedFilterValue) {
+      filtered = filtered.filter(i => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const raw: any = i.extraFields ? i.extraFields[filterColumn] : undefined;
+        if (raw === null || raw === undefined) return false;
+        if (typeof raw === 'boolean') return (raw ? 'Yes' : 'No') === selectedFilterValue;
+        if (Array.isArray(raw)) return raw.map(String).indexOf(selectedFilterValue) !== -1;
+        if (typeof raw === 'object' && raw.results) {
+          return (raw.results as string[]).map(String).indexOf(selectedFilterValue) !== -1;
+        }
+        return String(raw).trim() === selectedFilterValue;
+      });
     }
 
     if (searchQuery.trim()) {
@@ -211,6 +238,7 @@ export default class FaqAccordion extends React.Component<IFaqAccordionMainProps
       showTitle, titleText, titleAlignment, titleFontSize, showCategories, showSearch, categoryStyle,
       categoryAlignment, showAllCategory, categoryColorCoding, categoryColors,
       visibleCategories, categoryOrder,
+      filterBarEnabled, filterColumn, filterColumnLabel,
       searchPlaceholder, searchPlacement, searchAlignment, accordionStyle, arrowPosition, iconStyle, animationEnabled,
       questionFontSize, questionStyle, answerFontSize, categoryFontSize,
       accentColor, colorTitle, colorQuestion, colorAnswer,
@@ -218,7 +246,7 @@ export default class FaqAccordion extends React.Component<IFaqAccordionMainProps
       emptyStateText, loadingText, isDarkTheme,
     } = this.props;
 
-    const { loading, error, expandedIds, selectedCategory, searchQuery, categories } = this.state;
+    const { loading, error, expandedIds, selectedCategory, searchQuery, categories, filterColumnValues, selectedFilterValue } = this.state;
 
     // Apply visibility filter: only show categories the editor has enabled
     const visibleList = parseJsonArray(visibleCategories);
@@ -299,6 +327,17 @@ export default class FaqAccordion extends React.Component<IFaqAccordionMainProps
       />
     ) : null;
 
+    const filterBar = filterBarEnabled && filterColumnValues.length > 0 ? (
+      <FilterBar
+        label={filterColumnLabel || filterColumn || 'Filter'}
+        values={filterColumnValues}
+        selectedValue={selectedFilterValue}
+        onValueChange={(val) => this.setState({ selectedFilterValue: val })}
+        showAll={true}
+        fontSize={categoryFontSize}
+      />
+    ) : null;
+
     const categoryBar = showCategories && orderedCats.length > 0 ? (
       <CategoryBar
         categories={orderedCats}
@@ -364,6 +403,7 @@ export default class FaqAccordion extends React.Component<IFaqAccordionMainProps
 
         {!loading && !error && this.props.listName && (
           <>
+            {filterBar}
             {fullWidthSearchNode}
             {searchNode}
             {categoryNode}

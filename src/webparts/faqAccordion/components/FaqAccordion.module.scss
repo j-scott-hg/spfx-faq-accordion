@@ -60,6 +60,60 @@
   font-size: 14px;
 }
 
+// ─── Secondary Filter Bar ───────────────────────────────────────────────────────
+.filterBar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding: 10px 14px;
+  background: var(--neutralLighterAlt, #faf9f8);
+  border: 1px solid var(--faq-border);
+  border-radius: 6px;
+}
+
+.filterBarLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--faq-text-secondary);
+  white-space: nowrap;
+  margin-right: 4px;
+}
+
+.filterBarItems {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.filterBarItem {
+  padding: 4px 14px;
+  border-radius: 16px;
+  border: 1.5px solid var(--faq-border);
+  background: var(--faq-surface);
+  color: var(--faq-text-primary);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background var(--faq-transition), border-color var(--faq-transition), color var(--faq-transition);
+
+  &:hover {
+    border-color: var(--faq-accent);
+    color: var(--faq-accent);
+  }
+}
+
+.filterBarItemSelected {
+  background: var(--faq-accent);
+  border-color: var(--faq-accent);
+  color: #fff;
+
+  &:hover {
+    color: #fff;
+  }
+}
+
 // ─── Search Bar ─────────────────────────────────────────────────────────────────
 .searchBar {
   margin-bottom: 16px;

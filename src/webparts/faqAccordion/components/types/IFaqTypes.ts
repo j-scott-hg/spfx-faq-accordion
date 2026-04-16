@@ -27,6 +27,9 @@ export interface IFaqItem {
   sortOrder: number;
   isActive: boolean;
   expandedByDefault: boolean;
+  // Extra raw field values for secondary filtering (keyed by internal field name)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  extraFields: { [fieldName: string]: any };
 }
 
 export interface IFaqWebPartProps {
@@ -67,6 +70,18 @@ export interface IFaqWebPartProps {
   visibleCategories: string;
   // JSON array of category names defining display order (empty = alphabetical)
   categoryOrder: string;
+
+  // Option F — SharePoint View selector
+  // Internal name of the view to use for loading items (empty = default view)
+  selectedView: string;
+
+  // Option B — Secondary filter bar (user-facing)
+  filterBarEnabled: boolean;
+  // Internal name of the column to drive the secondary filter bar
+  filterColumn: string;
+  // Display name of that column (for the bar label)
+  filterColumnLabel: string;
+
   searchPlaceholder: string;
   searchScope: SearchScope;
   searchAlignment: SearchAlignment;
