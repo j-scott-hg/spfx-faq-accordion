@@ -165,19 +165,18 @@ export default class FaqAccordion extends React.Component<IFaqAccordionMainProps
     const { searchScope, visibleCategories, filterBarEnabled, filterColumn } = this.props;
     const { items, selectedCategory, searchQuery, selectedFilterValue } = this.state;
 
-    // Parse which categories are visible (empty array = all visible)
-    const visibleList = parseJsonArray(visibleCategories);
+    // Parse which categories are hidden (empty array = all visible)
+    const hiddenList = parseJsonArray(visibleCategories);
 
     let filtered = items;
 
-    // If editor has restricted visible categories, hide items that have NO
-    // visible category (i.e. all their categories are hidden)
-    if (visibleList.length > 0) {
+    // If editor has hidden some categories, exclude items whose ALL categories are hidden
+    if (hiddenList.length > 0) {
       filtered = filtered.filter(i => {
-        // Item is visible if at least one of its categories is in the visible list,
-        // OR if it has no categories at all (uncategorised items always show)
+        // Uncategorised items always show
         if (!i.categories || i.categories.length === 0) return true;
-        return i.categories.some((cat: string) => visibleList.indexOf(cat) !== -1);
+        // Show if at least one category is NOT hidden
+        return i.categories.some((cat: string) => hiddenList.indexOf(cat) === -1);
       });
     }
 
@@ -238,7 +237,7 @@ export default class FaqAccordion extends React.Component<IFaqAccordionMainProps
       showTitle, titleText, titleAlignment, titleFontSize, showCategories, showSearch, categoryStyle,
       categoryAlignment, showAllCategory, categoryColorCoding, categoryColors,
       visibleCategories, categoryOrder,
-      filterBarEnabled, filterColumn, filterColumnLabel,
+      filterBarEnabled, filterColumn, filterColumnLabel, filterBarPlacement, filterBarAlignment, filterBarBorder,
       searchPlaceholder, searchPlacement, searchAlignment, accordionStyle, arrowPosition, iconStyle, animationEnabled,
       questionFontSize, questionStyle, answerFontSize, categoryFontSize,
       accentColor, colorTitle, colorQuestion, colorAnswer,
@@ -248,10 +247,11 @@ export default class FaqAccordion extends React.Component<IFaqAccordionMainProps
 
     const { loading, error, expandedIds, selectedCategory, searchQuery, categories, filterColumnValues, selectedFilterValue } = this.state;
 
-    // Apply visibility filter: only show categories the editor has enabled
-    const visibleList = parseJsonArray(visibleCategories);
-    const visibleCats = visibleList.length > 0
-      ? categories.filter(c => visibleList.indexOf(c) !== -1)
+    // Apply visibility filter: visibleCategories now stores HIDDEN categories
+    // Empty hidden list = all categories shown
+    const hiddenList = parseJsonArray(visibleCategories);
+    const visibleCats = hiddenList.length > 0
+      ? categories.filter(c => hiddenList.indexOf(c) === -1)
       : categories;
 
     // Apply custom order: editor-defined order first, then any remaining alphabetically
@@ -316,18 +316,21 @@ export default class FaqAccordion extends React.Component<IFaqAccordionMainProps
         : { '--faq-border-width': `${effectiveBorderThickness}px` } as React.CSSProperties),
     };
 
-    const isFullWidth = (searchPlacement || 'aboveCategories') === 'fullWidth';
-    const searchBar = showSearch ? (
+    const placement = searchPlacement || 'aboveCategories';
+    const fbPlacement = filterBarPlacement || 'aboveSearch';
+    const fbInline = fbPlacement === 'inlineSearch' || fbPlacement === 'inlineCategories';
+
+    const searchBarEl = showSearch ? (
       <SearchBar
         placeholder={searchPlaceholder}
         value={searchQuery}
         onChange={(val) => this.setState({ searchQuery: val })}
         alignment={searchAlignment || 'left'}
-        fullWidth={isFullWidth}
+        fullWidth={placement === 'fullWidth'}
       />
     ) : null;
 
-    const filterBar = filterBarEnabled && filterColumnValues.length > 0 ? (
+    const filterBarEl = filterBarEnabled && filterColumnValues.length > 0 ? (
       <FilterBar
         label={filterColumnLabel || filterColumn || 'Filter'}
         values={filterColumnValues}
@@ -335,10 +338,13 @@ export default class FaqAccordion extends React.Component<IFaqAccordionMainProps
         onValueChange={(val) => this.setState({ selectedFilterValue: val })}
         showAll={true}
         fontSize={categoryFontSize}
+        alignment={filterBarAlignment || 'left'}
+        showBorder={filterBarBorder !== false}
+        inline={fbInline}
       />
     ) : null;
 
-    const categoryBar = showCategories && orderedCats.length > 0 ? (
+    const categoryBarEl = showCategories && orderedCats.length > 0 ? (
       <CategoryBar
         categories={orderedCats}
         selectedCategory={selectedCategory}
@@ -352,29 +358,56 @@ export default class FaqAccordion extends React.Component<IFaqAccordionMainProps
       />
     ) : null;
 
-    // Determine render order based on searchPlacement
-    const placement = searchPlacement || 'aboveCategories';
-    // fullWidth: search bar spans the full width above everything (title excluded)
-    // aboveCategories: search above category bar
-    // belowCategories: search below category bar
+    // Build layout nodes
     let fullWidthSearchNode: React.ReactNode = null;
     let searchNode: React.ReactNode = null;
     let categoryNode: React.ReactNode = null;
 
-    if (placement === 'fullWidth') {
-      fullWidthSearchNode = searchBar;
-      categoryNode = categoryBar;
-    } else if (placement === 'aboveCategories') {
-      searchNode = searchBar;
-      categoryNode = categoryBar;
+    if (fbPlacement === 'inlineSearch') {
+      const searchRow = (searchBarEl || filterBarEl) ? (
+        <div className={styles.inlineRow}>{searchBarEl}{filterBarEl}</div>
+      ) : null;
+      if (placement === 'fullWidth') {
+        fullWidthSearchNode = searchRow;
+        categoryNode = categoryBarEl;
+      } else if (placement === 'aboveCategories') {
+        searchNode = searchRow;
+        categoryNode = categoryBarEl;
+      } else {
+        categoryNode = <>{categoryBarEl}{searchRow}</>;
+      }
+    } else if (fbPlacement === 'inlineCategories') {
+      const catRow = (categoryBarEl || filterBarEl) ? (
+        <div className={styles.inlineRow}>{categoryBarEl}{filterBarEl}</div>
+      ) : null;
+      if (placement === 'fullWidth') {
+        fullWidthSearchNode = searchBarEl;
+        categoryNode = catRow;
+      } else if (placement === 'aboveCategories') {
+        searchNode = searchBarEl;
+        categoryNode = catRow;
+      } else {
+        categoryNode = catRow;
+        searchNode = searchBarEl;
+      }
     } else {
-      // belowCategories
-      categoryNode = (
-        <>
-          {categoryBar}
-          {searchBar}
-        </>
-      );
+      // aboveSearch | belowSearch — filter bar standalone
+      const isAboveSearch = fbPlacement !== 'belowSearch';
+      if (placement === 'fullWidth') {
+        fullWidthSearchNode = searchBarEl;
+        categoryNode = isAboveSearch
+          ? <>{filterBarEl}{categoryBarEl}</>
+          : <>{categoryBarEl}{filterBarEl}</>;
+      } else if (placement === 'aboveCategories') {
+        searchNode = isAboveSearch
+          ? <>{filterBarEl}{searchBarEl}</>
+          : <>{searchBarEl}{filterBarEl}</>;
+        categoryNode = categoryBarEl;
+      } else {
+        categoryNode = isAboveSearch
+          ? <>{filterBarEl}{categoryBarEl}{searchBarEl}</>
+          : <>{categoryBarEl}{filterBarEl}{searchBarEl}</>;
+      }
     }
 
     return (
@@ -403,7 +436,6 @@ export default class FaqAccordion extends React.Component<IFaqAccordionMainProps
 
         {!loading && !error && this.props.listName && (
           <>
-            {filterBar}
             {fullWidthSearchNode}
             {searchNode}
             {categoryNode}

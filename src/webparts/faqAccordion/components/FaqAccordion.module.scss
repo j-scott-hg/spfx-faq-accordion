@@ -73,8 +73,37 @@
   border-radius: 6px;
 }
 
+// No border / background box variant
+.filterBarNoBorder {
+  background: transparent;
+  border: none;
+  padding: 4px 0;
+}
+
+// Inline variant (sits alongside search bar or category bar)
+.filterBarInline {
+  margin-bottom: 0;
+  padding: 0;
+  background: transparent;
+  border: none;
+  flex-shrink: 0;
+}
+
+// Alignment
+.filterBarLeft  { justify-content: flex-start; }
+.filterBarCenter { justify-content: center; }
+.filterBarRight  { justify-content: flex-end; }
+
 .filterBarLabel {
   font-size: 13px;
+  font-weight: 600;
+  color: var(--faq-text-secondary);
+  white-space: nowrap;
+  margin-right: 4px;
+}
+
+.filterBarLabelInline {
+  font-size: 12px;
   font-weight: 600;
   color: var(--faq-text-secondary);
   white-space: nowrap;
@@ -112,6 +141,15 @@
   &:hover {
     color: #fff;
   }
+}
+
+// Inline row: search bar + filter bar / category bar + filter bar side by side
+.inlineRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
 }
 
 // ─── Search Bar ─────────────────────────────────────────────────────────────────

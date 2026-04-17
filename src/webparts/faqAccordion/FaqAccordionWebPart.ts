@@ -148,18 +148,28 @@ export default class FaqAccordionWebPart extends BaseClientSideWebPart<IFaqAccor
   }
 
   private _getVisibleCategories(): string[] {
+    // visibleCategories stores the HIDDEN list (empty = all shown)
+    // This is more intuitive: "hide" adds to the list, "show" removes
     return this._parseJsonArray(this.properties.visibleCategories);
   }
 
+  private _isCategoryVisible(cat: string): boolean {
+    const hidden = this._getVisibleCategories();
+    // Empty hidden list = all visible
+    return hidden.indexOf(cat) === -1;
+  }
+
   private _toggleVisibleCategory(cat: string): void {
-    const current = this._getVisibleCategories();
-    const idx = current.indexOf(cat);
+    const hidden = this._getVisibleCategories();
+    const idx = hidden.indexOf(cat);
     if (idx === -1) {
-      current.push(cat);
+      // Currently visible → hide it
+      hidden.push(cat);
     } else {
-      current.splice(idx, 1);
+      // Currently hidden → show it
+      hidden.splice(idx, 1);
     }
-    this.properties.visibleCategories = JSON.stringify(current);
+    this.properties.visibleCategories = JSON.stringify(hidden);
     this.context.propertyPane.refresh();
     this.render();
   }
@@ -199,8 +209,8 @@ export default class FaqAccordionWebPart extends BaseClientSideWebPart<IFaqAccor
 
   private _getCategoryVisibilityFields(): import('@microsoft/sp-property-pane').IPropertyPaneField<unknown>[] {
     const cats = this._getCategoryOrder();
-    const visible = this._getVisibleCategories();
-    const isFiltered = visible.length > 0;
+    const hidden = this._getVisibleCategories();
+    const hiddenCount = cats.filter(c => hidden.indexOf(c) !== -1).length;
 
     if (cats.length === 0) {
       return [
@@ -214,26 +224,21 @@ export default class FaqAccordionWebPart extends BaseClientSideWebPart<IFaqAccor
 
     fields.push(
       PropertyPaneLabel('catVisibilityHint', {
-        text: isFiltered
-          ? `Showing ${visible.length} of ${cats.length} categories. Uncheck all to show every category.`
-          : `All ${cats.length} categories visible. Check items below to restrict which ones appear.`,
+        text: hiddenCount > 0
+          ? `${hiddenCount} of ${cats.length} categories hidden.`
+          : `All ${cats.length} categories visible.`,
       })
     );
 
     cats.forEach((cat, idx) => {
-      const isVisible = !isFiltered || visible.indexOf(cat) !== -1;
-      // Toggle checkbox
+      const isVisible = this._isCategoryVisible(cat);
+      // Visibility toggle as a button (reliable in SPFx dynamic fields)
       fields.push(
-        PropertyPaneToggle(`catVisible_${idx}`, {
-          label: cat,
-          checked: isVisible,
-          onText: 'Visible',
-          offText: 'Hidden',
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          onChange: (_key: string, _newValue: any) => {
-            this._toggleVisibleCategory(cat);
-          },
-        } as import('@microsoft/sp-property-pane').IPropertyPaneToggleProps)
+        PropertyPaneButton(`catToggle_${idx}`, {
+          text: isVisible ? `👁 ${cat} — click to Hide` : `🚫 ${cat} — click to Show`,
+          buttonType: PropertyPaneButtonType.Normal,
+          onClick: () => { this._toggleVisibleCategory(cat); return ''; },
+        })
       );
       // Up button (disabled for first item)
       if (idx > 0) {
@@ -594,6 +599,31 @@ export default class FaqAccordionWebPart extends BaseClientSideWebPart<IFaqAccor
                         : 'e.g. Audience',
                       value: this.properties.filterColumnLabel || '',
                       description: 'Label shown to the left of the filter chips. Leave blank to use the column name.',
+                    }),
+                    PropertyPaneDropdown('filterBarPlacement', {
+                      label: 'Placement',
+                      options: [
+                        { key: 'aboveSearch', text: 'Above Search Bar' },
+                        { key: 'belowSearch', text: 'Below Search Bar' },
+                        { key: 'inlineSearch', text: 'Inline with Search Bar' },
+                        { key: 'inlineCategories', text: 'Inline with Category Bar' },
+                      ] as IPropertyPaneDropdownOption[],
+                      selectedKey: this.properties.filterBarPlacement || 'aboveSearch',
+                    }),
+                    PropertyPaneDropdown('filterBarAlignment', {
+                      label: 'Chip Alignment',
+                      options: [
+                        { key: 'left', text: 'Left' },
+                        { key: 'center', text: 'Center' },
+                        { key: 'right', text: 'Right' },
+                      ] as IPropertyPaneDropdownOption[],
+                      selectedKey: this.properties.filterBarAlignment || 'left',
+                    }),
+                    PropertyPaneToggle('filterBarBorder', {
+                      label: 'Show Border / Background',
+                      checked: this.properties.filterBarBorder !== false,
+                      onText: 'Visible',
+                      offText: 'Hidden',
                     }),
                   ] : [
                     PropertyPaneLabel('noColsLabel', {

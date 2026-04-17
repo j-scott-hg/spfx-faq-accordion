@@ -2,12 +2,15 @@ import * as React from 'react';
 import styles from './FaqAccordion.module.scss';
 
 export interface IFilterBarProps {
-  label: string;          // Column display name shown as a prefix label
-  values: string[];       // All possible values for this column
-  selectedValue: string;  // Currently active filter value ('' = All)
+  label: string;
+  values: string[];
+  selectedValue: string;
   onValueChange: (value: string) => void;
-  showAll: boolean;       // Whether to show an "All" option
+  showAll: boolean;
   fontSize?: number;
+  alignment?: string;   // left | center | right
+  showBorder?: boolean; // whether to render the outer border/bg box
+  inline?: boolean;     // true when rendered inline with search or categories
 }
 
 const FilterBar: React.FC<IFilterBarProps> = ({
@@ -17,15 +20,36 @@ const FilterBar: React.FC<IFilterBarProps> = ({
   onValueChange,
   showAll,
   fontSize,
+  alignment,
+  showBorder,
+  inline,
 }) => {
   if (!values || values.length === 0) return null;
 
   const allValues = showAll ? ['All', ...values] : values;
 
+  const alignClass = alignment === 'center'
+    ? styles.filterBarCenter
+    : alignment === 'right'
+    ? styles.filterBarRight
+    : styles.filterBarLeft;
+
+  const containerClass = [
+    styles.filterBar,
+    alignClass,
+    showBorder === false ? styles.filterBarNoBorder : '',
+    inline ? styles.filterBarInline : '',
+  ].filter(Boolean).join(' ');
+
   return (
-    <div className={styles.filterBar}>
-      {label && (
+    <div className={containerClass}>
+      {label && !inline && (
         <span className={styles.filterBarLabel} style={{ fontSize: fontSize ? `${fontSize}px` : undefined }}>
+          {label}:
+        </span>
+      )}
+      {label && inline && (
+        <span className={styles.filterBarLabelInline} style={{ fontSize: fontSize ? `${fontSize}px` : undefined }}>
           {label}:
         </span>
       )}
