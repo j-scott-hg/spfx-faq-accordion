@@ -85,8 +85,6 @@ export interface IFaqWebPartProps {
   filterBarPlacement: string;
   // Alignment of filter chips: left | center | right
   filterBarAlignment: string;
-  // Whether to show the bar's outer border/background box
-  filterBarBorder: boolean;
 
   searchPlaceholder: string;
   searchScope: SearchScope;

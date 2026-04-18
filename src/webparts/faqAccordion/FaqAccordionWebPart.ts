@@ -619,12 +619,6 @@ export default class FaqAccordionWebPart extends BaseClientSideWebPart<IFaqAccor
                       ] as IPropertyPaneDropdownOption[],
                       selectedKey: this.properties.filterBarAlignment || 'left',
                     }),
-                    PropertyPaneToggle('filterBarBorder', {
-                      label: 'Show Border / Background',
-                      checked: this.properties.filterBarBorder !== false,
-                      onText: 'Visible',
-                      offText: 'Hidden',
-                    }),
                   ] : [
                     PropertyPaneLabel('noColsLabel', {
                       text: 'No filterable columns found. Add Choice or Yes/No columns to the list.',

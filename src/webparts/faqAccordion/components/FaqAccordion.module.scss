@@ -67,17 +67,9 @@
   flex-wrap: wrap;
   gap: 8px;
   margin-bottom: 12px;
-  padding: 10px 14px;
-  background: var(--neutralLighterAlt, #faf9f8);
-  border: 1px solid var(--faq-border);
-  border-radius: 6px;
-}
-
-// No border / background box variant
-.filterBarNoBorder {
+  padding: 4px 0;
   background: transparent;
   border: none;
-  padding: 4px 0;
 }
 
 // Inline variant (sits alongside search bar or category bar)

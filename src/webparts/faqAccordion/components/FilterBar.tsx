@@ -8,9 +8,8 @@ export interface IFilterBarProps {
   onValueChange: (value: string) => void;
   showAll: boolean;
   fontSize?: number;
-  alignment?: string;   // left | center | right
-  showBorder?: boolean; // whether to render the outer border/bg box
-  inline?: boolean;     // true when rendered inline with search or categories
+  alignment?: string;
+  inline?: boolean;
 }
 
 const FilterBar: React.FC<IFilterBarProps> = ({
@@ -21,7 +20,6 @@ const FilterBar: React.FC<IFilterBarProps> = ({
   showAll,
   fontSize,
   alignment,
-  showBorder,
   inline,
 }) => {
   if (!values || values.length === 0) return null;
@@ -37,7 +35,6 @@ const FilterBar: React.FC<IFilterBarProps> = ({
   const containerClass = [
     styles.filterBar,
     alignClass,
-    showBorder === false ? styles.filterBarNoBorder : '',
     inline ? styles.filterBarInline : '',
   ].filter(Boolean).join(' ');
 
