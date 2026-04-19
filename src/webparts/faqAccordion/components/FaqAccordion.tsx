@@ -76,6 +76,11 @@ export default class FaqAccordion extends React.Component<IFaqAccordionMainProps
   }
 
   public componentDidUpdate(prevProps: IFaqAccordionMainProps): void {
+    // Recreate service if context reference changed (SPFx can swap context between renders)
+    if (prevProps.context !== this.props.context && this.props.context) {
+      this._service = new FaqListService(this.props.context);
+    }
+
     const relevantChanged =
       prevProps.listName !== this.props.listName ||
       prevProps.sortField !== this.props.sortField ||
@@ -93,7 +98,7 @@ export default class FaqAccordion extends React.Component<IFaqAccordionMainProps
   private async _loadData(): Promise<void> {
     const { listName, sortField, sortDirection, showOnlyActive, maxItems, expandFirstItem, selectedView, filterColumn, filterBarEnabled } = this.props;
 
-    if (!listName) {
+    if (!listName || !this.props.context) {
       this.setState({ items: [], categories: [], loading: false, error: '', filterColumnValues: [] });
       return;
     }

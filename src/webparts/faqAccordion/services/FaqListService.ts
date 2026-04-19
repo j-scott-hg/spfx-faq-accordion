@@ -63,6 +63,7 @@ export class FaqListService {
   }
 
   constructor(context: WebPartContext) {
+    if (!context) throw new Error('FaqListService: context is required');
     this._sp = spfi().using(SPFx(context));
   }
 
