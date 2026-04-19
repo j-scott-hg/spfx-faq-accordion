@@ -291,10 +291,12 @@ export default class FaqAccordion extends React.Component<IFaqAccordionMainProps
       || (accentColor && accentColor.trim() ? accentColor.trim() : undefined);
 
     // Effective border color: custom hex > darkness slider
+    // When darkness is explicitly 0 (and no custom hex), set transparent so
+    // --faq-border doesn't fall back to the :root default of rgba(0,0,0,0.22)
     const effectiveBorderColor = colorBorders && colorBorders.trim()
       ? colorBorders.trim()
-      : borderDarkness > 0
-      ? `rgba(0,0,0,${(borderDarkness / 100) * 0.85 + 0.15})`
+      : borderDarkness !== undefined
+      ? (borderDarkness === 0 ? 'transparent' : `rgba(0,0,0,${(borderDarkness / 100) * 0.85 + 0.15})`)
       : undefined;
 
     // Effective border thickness: 0 = no border
