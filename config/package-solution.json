@@ -3,7 +3,7 @@
   "solution": {
     "name": "FAQ - Accordion",
     "id": "570882ba-3e48-433b-be7d-89294cf17cad",
-    "version": "1.7.0.0",
+    "version": "1.8.0.0",
     "includeClientSideAssets": true,
     "skipFeatureDeployment": true,
     "isDomainIsolated": false,
