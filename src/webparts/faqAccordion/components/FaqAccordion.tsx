@@ -215,7 +215,8 @@ export default class FaqAccordion extends React.Component<IFaqAccordionMainProps
   }
 
   private _getContainerStyle(): React.CSSProperties {
-    const { accordionStyle, shadowIntensity, borderRadius } = this.props;
+    const { accordionStyle, shadowIntensity, borderRadius, webPartPadding } = this.props;
+    const padding = webPartPadding !== undefined ? webPartPadding : 20;
 
     const shadow = accordionStyle === 'cardStack' || accordionStyle === 'pillPanel'
       ? shadowIntensity === 'none' ? 'none'
@@ -225,6 +226,7 @@ export default class FaqAccordion extends React.Component<IFaqAccordionMainProps
       : 'none';
 
     return {
+      padding: `${padding}px`,
       boxShadow: shadow,
       borderRadius: `${borderRadius}px`,
     };

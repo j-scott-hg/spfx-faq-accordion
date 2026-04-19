@@ -724,6 +724,14 @@ export default class FaqAccordionWebPart extends BaseClientSideWebPart<IFaqAccor
                   showValue: true,
                   value: this.properties.borderRadius || 4,
                 }),
+                PropertyPaneSlider('webPartPadding', {
+                  label: 'Web Part Padding (px)',
+                  min: 0,
+                  max: 40,
+                  step: 2,
+                  value: this.properties.webPartPadding !== undefined ? this.properties.webPartPadding : 20,
+                  showValue: true,
+                }),
                 PropertyPaneDropdown('shadowIntensity', {
                   label: 'Shadow Intensity (Card Styles)',
                   options: [

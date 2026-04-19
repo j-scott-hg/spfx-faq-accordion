@@ -101,6 +101,7 @@ export interface IFaqWebPartProps {
   borderThickness: number;
   borderRadius: number;
   shadowIntensity: ShadowIntensity;
+  webPartPadding: number;
 
   // Advanced
   sortField: string;
