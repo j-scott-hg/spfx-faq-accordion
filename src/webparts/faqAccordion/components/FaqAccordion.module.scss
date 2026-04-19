@@ -72,15 +72,6 @@
   border: none;
 }
 
-// Inline variant (sits alongside search bar or category bar)
-.filterBarInline {
-  margin-bottom: 0;
-  padding: 0;
-  background: transparent;
-  border: none;
-  flex-shrink: 0;
-}
-
 // Alignment
 .filterBarLeft  { justify-content: flex-start; }
 .filterBarCenter { justify-content: center; }
@@ -94,13 +85,6 @@
   margin-right: 4px;
 }
 
-.filterBarLabelInline {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--faq-text-secondary);
-  white-space: nowrap;
-  margin-right: 4px;
-}
 
 .filterBarItems {
   display: flex;
@@ -133,15 +117,6 @@
   &:hover {
     color: #fff;
   }
-}
-
-// Inline row: search bar + filter bar / category bar + filter bar side by side
-.inlineRow {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-  margin-bottom: 12px;
 }
 
 // ─── Search Bar ─────────────────────────────────────────────────────────────────
@@ -360,18 +335,20 @@
 }
 
 // ─── Accordion List ─────────────────────────────────────────────────────────────
+// --faq-item-gap is set inline by the component from the itemGap prop.
+// Each style has a sensible fallback; Minimal Classic defaults to 0 (border dividers).
 .accordionList {
   display: flex;
   flex-direction: column;
-  gap: 0;
+  gap: var(--faq-item-gap, 0px);
 }
 
 .accordionList_cardStack {
-  gap: 10px;
+  gap: var(--faq-item-gap, 10px);
 }
 
 .accordionList_pillPanel {
-  gap: 8px;
+  gap: var(--faq-item-gap, 8px);
 }
 
 // ─── Accordion Item ─────────────────────────────────────────────────────────────

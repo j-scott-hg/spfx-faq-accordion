@@ -238,7 +238,7 @@ export default class FaqAccordion extends React.Component<IFaqAccordionMainProps
       categoryAlignment, showAllCategory, categoryColorCoding, categoryColors,
       visibleCategories, categoryOrder,
       filterBarEnabled, filterColumn, filterColumnLabel, filterBarPlacement, filterBarAlignment,
-      searchPlaceholder, searchPlacement, searchAlignment, accordionStyle, arrowPosition, iconStyle, animationEnabled,
+      searchPlaceholder, searchPlacement, searchAlignment, accordionStyle, arrowPosition, iconStyle, animationEnabled, itemGap,
       questionFontSize, questionStyle, answerFontSize, categoryFontSize,
       accentColor, colorTitle, colorQuestion, colorAnswer,
       colorIcons, colorBorders, borderDarkness, borderThickness, borderRadius,
@@ -306,7 +306,13 @@ export default class FaqAccordion extends React.Component<IFaqAccordionMainProps
       textAlign: (titleAlignment || 'left') as React.CSSProperties['textAlign'],
     };
 
-    // Inject accent + border color + thickness as CSS custom properties
+    // Item gap: midpoint default is 8px; Minimal Classic (no explicit style) stays at 0 unless editor overrides
+    const effectiveGap = itemGap !== undefined ? itemGap : (
+      accordionStyle === 'cardStack' ? 10 :
+      accordionStyle === 'pillPanel' ? 8 : 0
+    );
+
+    // Inject accent + border color + thickness + item gap as CSS custom properties
     const containerStyle: React.CSSProperties = {
       ...this._getContainerStyle(),
       ...(effectiveAccent ? { '--faq-accent': effectiveAccent, '--faq-accent-light': `${effectiveAccent}1a` } as React.CSSProperties : {}),
@@ -314,11 +320,12 @@ export default class FaqAccordion extends React.Component<IFaqAccordionMainProps
       ...(effectiveBorderThickness === 0
         ? { '--faq-border-width': '0px' } as React.CSSProperties
         : { '--faq-border-width': `${effectiveBorderThickness}px` } as React.CSSProperties),
-    };
+      '--faq-item-gap': `${effectiveGap}px`,
+    } as React.CSSProperties;
 
     const placement = searchPlacement || 'aboveCategories';
+    // aboveSearch | belowSearch; inline options removed (they broke search/category alignment)
     const fbPlacement = filterBarPlacement || 'aboveSearch';
-    const fbInline = fbPlacement === 'inlineSearch' || fbPlacement === 'inlineCategories';
 
     const searchBarEl = showSearch ? (
       <SearchBar
@@ -339,7 +346,6 @@ export default class FaqAccordion extends React.Component<IFaqAccordionMainProps
         showAll={true}
         fontSize={categoryFontSize}
         alignment={filterBarAlignment || 'left'}
-        inline={fbInline}
       />
     ) : null;
 
@@ -357,56 +363,27 @@ export default class FaqAccordion extends React.Component<IFaqAccordionMainProps
       />
     ) : null;
 
-    // Build layout nodes
+    // Build layout nodes: filter bar is always a standalone block (above or below search)
     let fullWidthSearchNode: React.ReactNode = null;
     let searchNode: React.ReactNode = null;
     let categoryNode: React.ReactNode = null;
 
-    if (fbPlacement === 'inlineSearch') {
-      const searchRow = (searchBarEl || filterBarEl) ? (
-        <div className={styles.inlineRow}>{searchBarEl}{filterBarEl}</div>
-      ) : null;
-      if (placement === 'fullWidth') {
-        fullWidthSearchNode = searchRow;
-        categoryNode = categoryBarEl;
-      } else if (placement === 'aboveCategories') {
-        searchNode = searchRow;
-        categoryNode = categoryBarEl;
-      } else {
-        categoryNode = <>{categoryBarEl}{searchRow}</>;
-      }
-    } else if (fbPlacement === 'inlineCategories') {
-      const catRow = (categoryBarEl || filterBarEl) ? (
-        <div className={styles.inlineRow}>{categoryBarEl}{filterBarEl}</div>
-      ) : null;
-      if (placement === 'fullWidth') {
-        fullWidthSearchNode = searchBarEl;
-        categoryNode = catRow;
-      } else if (placement === 'aboveCategories') {
-        searchNode = searchBarEl;
-        categoryNode = catRow;
-      } else {
-        categoryNode = catRow;
-        searchNode = searchBarEl;
-      }
+    const isAboveSearch = fbPlacement !== 'belowSearch';
+    if (placement === 'fullWidth') {
+      fullWidthSearchNode = searchBarEl;
+      categoryNode = isAboveSearch
+        ? <>{filterBarEl}{categoryBarEl}</>
+        : <>{categoryBarEl}{filterBarEl}</>;
+    } else if (placement === 'aboveCategories') {
+      searchNode = isAboveSearch
+        ? <>{filterBarEl}{searchBarEl}</>
+        : <>{searchBarEl}{filterBarEl}</>;
+      categoryNode = categoryBarEl;
     } else {
-      // aboveSearch | belowSearch — filter bar standalone
-      const isAboveSearch = fbPlacement !== 'belowSearch';
-      if (placement === 'fullWidth') {
-        fullWidthSearchNode = searchBarEl;
-        categoryNode = isAboveSearch
-          ? <>{filterBarEl}{categoryBarEl}</>
-          : <>{categoryBarEl}{filterBarEl}</>;
-      } else if (placement === 'aboveCategories') {
-        searchNode = isAboveSearch
-          ? <>{filterBarEl}{searchBarEl}</>
-          : <>{searchBarEl}{filterBarEl}</>;
-        categoryNode = categoryBarEl;
-      } else {
-        categoryNode = isAboveSearch
-          ? <>{filterBarEl}{categoryBarEl}{searchBarEl}</>
-          : <>{categoryBarEl}{filterBarEl}{searchBarEl}</>;
-      }
+      // belowCategories
+      categoryNode = isAboveSearch
+        ? <>{filterBarEl}{categoryBarEl}{searchBarEl}</>
+        : <>{categoryBarEl}{filterBarEl}{searchBarEl}</>;
     }
 
     return (

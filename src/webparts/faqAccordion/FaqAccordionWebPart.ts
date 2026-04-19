@@ -411,9 +411,16 @@ export default class FaqAccordionWebPart extends BaseClientSideWebPart<IFaqAccor
                   label: 'Expand First Item by Default',
                   checked: this.properties.expandFirstItem || false,
                 }),
-                PropertyPaneToggle('showDividers', {
-                  label: 'Show Dividers',
-                  checked: this.properties.showDividers !== false,
+                PropertyPaneSlider('itemGap', {
+                  label: 'Space Between Items (px)',
+                  min: 0,
+                  max: 24,
+                  step: 1,
+                  value: this.properties.itemGap !== undefined ? this.properties.itemGap : (
+                    (this.properties.accordionStyle === 'cardStack') ? 10 :
+                    (this.properties.accordionStyle === 'pillPanel') ? 8 : 0
+                  ),
+                  showValue: true,
                 }),
                 PropertyPaneToggle('animationEnabled', {
                   label: 'Enable Smooth Animation',
@@ -605,8 +612,6 @@ export default class FaqAccordionWebPart extends BaseClientSideWebPart<IFaqAccor
                       options: [
                         { key: 'aboveSearch', text: 'Above Search Bar' },
                         { key: 'belowSearch', text: 'Below Search Bar' },
-                        { key: 'inlineSearch', text: 'Inline with Search Bar' },
-                        { key: 'inlineCategories', text: 'Inline with Category Bar' },
                       ] as IPropertyPaneDropdownOption[],
                       selectedKey: this.properties.filterBarPlacement || 'aboveSearch',
                     }),

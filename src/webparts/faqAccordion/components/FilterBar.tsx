@@ -9,7 +9,6 @@ export interface IFilterBarProps {
   showAll: boolean;
   fontSize?: number;
   alignment?: string;
-  inline?: boolean;
 }
 
 const FilterBar: React.FC<IFilterBarProps> = ({
@@ -20,7 +19,6 @@ const FilterBar: React.FC<IFilterBarProps> = ({
   showAll,
   fontSize,
   alignment,
-  inline,
 }) => {
   if (!values || values.length === 0) return null;
 
@@ -32,21 +30,12 @@ const FilterBar: React.FC<IFilterBarProps> = ({
     ? styles.filterBarRight
     : styles.filterBarLeft;
 
-  const containerClass = [
-    styles.filterBar,
-    alignClass,
-    inline ? styles.filterBarInline : '',
-  ].filter(Boolean).join(' ');
+  const containerClass = `${styles.filterBar} ${alignClass}`;
 
   return (
     <div className={containerClass}>
-      {label && !inline && (
+      {label && (
         <span className={styles.filterBarLabel} style={{ fontSize: fontSize ? `${fontSize}px` : undefined }}>
-          {label}:
-        </span>
-      )}
-      {label && inline && (
-        <span className={styles.filterBarLabelInline} style={{ fontSize: fontSize ? `${fontSize}px` : undefined }}>
           {label}:
         </span>
       )}
