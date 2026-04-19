@@ -108,6 +108,17 @@ export default class FaqAccordionWebPart extends BaseClientSideWebPart<IFaqAccor
     this.context.propertyPane.refresh();
   }
 
+  protected async onPropertyPaneFieldChanged(propertyPath: string): Promise<void> {
+    // Re-fetch list-dependent data whenever the list changes or the filter bar is enabled
+    if (propertyPath === 'listName' || propertyPath === 'filterBarEnabled') {
+      await Promise.all([
+        this._loadAvailableCategories(),
+        this._loadViewsAndColumns(),
+      ]);
+      this.context.propertyPane.refresh();
+    }
+  }
+
   private async _loadAvailableCategories(): Promise<void> {
     if (!this._service || !this.properties.listName) return;
     try {
@@ -590,6 +601,16 @@ export default class FaqAccordionWebPart extends BaseClientSideWebPart<IFaqAccor
                   offText: 'Off',
                 }),
                 ...(this.properties.filterBarEnabled ? [
+                  // Reload button — useful if columns were added after pane was opened
+                  PropertyPaneButton('refreshColumns', {
+                    text: '↺ Refresh Column List',
+                    buttonType: PropertyPaneButtonType.Normal,
+                    onClick: () => {
+                      this._loadViewsAndColumns().then(() => this.context.propertyPane.refresh()).catch(() => undefined);
+                      return '';
+                    },
+                  }),
+                  // Column picker — shows a warning if none found, but Placement/Alignment always visible
                   ...(this._filterableColumns.length > 0 ? [
                     PropertyPaneDropdown('filterColumn', {
                       label: 'Filter by Column',
@@ -607,28 +628,29 @@ export default class FaqAccordionWebPart extends BaseClientSideWebPart<IFaqAccor
                       value: this.properties.filterColumnLabel || '',
                       description: 'Label shown to the left of the filter chips. Leave blank to use the column name.',
                     }),
-                    PropertyPaneDropdown('filterBarPlacement', {
-                      label: 'Placement',
-                      options: [
-                        { key: 'aboveSearch', text: 'Above Search Bar' },
-                        { key: 'belowSearch', text: 'Below Search Bar' },
-                      ] as IPropertyPaneDropdownOption[],
-                      selectedKey: this.properties.filterBarPlacement || 'aboveSearch',
-                    }),
-                    PropertyPaneDropdown('filterBarAlignment', {
-                      label: 'Chip Alignment',
-                      options: [
-                        { key: 'left', text: 'Left' },
-                        { key: 'center', text: 'Center' },
-                        { key: 'right', text: 'Right' },
-                      ] as IPropertyPaneDropdownOption[],
-                      selectedKey: this.properties.filterBarAlignment || 'left',
-                    }),
                   ] : [
                     PropertyPaneLabel('noColsLabel', {
-                      text: 'No filterable columns found. Add Choice or Yes/No columns to the list.',
+                      text: 'No filterable columns found. Make sure the list has Choice or Yes/No columns, then close and reopen the property pane.',
                     }),
                   ]),
+                  // Placement and alignment always available once the bar is enabled
+                  PropertyPaneDropdown('filterBarPlacement', {
+                    label: 'Placement',
+                    options: [
+                      { key: 'aboveSearch', text: 'Above Search Bar' },
+                      { key: 'belowSearch', text: 'Below Search Bar' },
+                    ] as IPropertyPaneDropdownOption[],
+                    selectedKey: this.properties.filterBarPlacement || 'aboveSearch',
+                  }),
+                  PropertyPaneDropdown('filterBarAlignment', {
+                    label: 'Chip Alignment',
+                    options: [
+                      { key: 'left', text: 'Left' },
+                      { key: 'center', text: 'Center' },
+                      { key: 'right', text: 'Right' },
+                    ] as IPropertyPaneDropdownOption[],
+                    selectedKey: this.properties.filterBarAlignment || 'left',
+                  }),
                 ] : []),
               ],
             },

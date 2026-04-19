@@ -184,11 +184,13 @@ export class FaqListService {
   public async getFilterableColumns(listName: string): Promise<IListColumnInfo[]> {
     if (!listName) return [];
     try {
+      // Only exclude hidden fields; ReadOnlyField filter excluded because some
+      // user-created Choice/Boolean columns are incorrectly flagged ReadOnly.
       const fields = await this._sp.web.lists
         .getByTitle(listName)
         .fields
         .select('InternalName', 'Title', 'FieldTypeKind')
-        .filter('Hidden eq false and ReadOnlyField eq false')();
+        .filter('Hidden eq false')();
       // FieldTypeKind: 6=Choice, 15=MultiChoice, 8=Boolean
       return (fields as IListColumnInfo[])
         .filter(f =>
