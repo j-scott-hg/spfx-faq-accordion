@@ -724,15 +724,6 @@ export default class FaqAccordionWebPart extends BaseClientSideWebPart<IFaqAccor
                   showValue: true,
                   value: this.properties.borderRadius || 4,
                 }),
-                PropertyPaneDropdown('spacingDensity', {
-                  label: 'Spacing Density',
-                  options: [
-                    { key: 'compact', text: 'Compact' },
-                    { key: 'normal', text: 'Normal (Default)' },
-                    { key: 'spacious', text: 'Spacious' },
-                  ],
-                  selectedKey: this.properties.spacingDensity || 'normal',
-                }),
                 PropertyPaneDropdown('shadowIntensity', {
                   label: 'Shadow Intensity (Card Styles)',
                   options: [

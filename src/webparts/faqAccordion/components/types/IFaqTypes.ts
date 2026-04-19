@@ -15,7 +15,6 @@ export type QuestionStyle = 'normal' | 'bold' | 'italic' | 'boldItalic';
 export type SearchPlacement = 'aboveCategories' | 'belowCategories' | 'fullWidth';
 export type SearchAlignment = 'left' | 'center' | 'right';
 export type SortDirection = 'asc' | 'desc';
-export type SpacingDensity = 'compact' | 'normal' | 'spacious';
 export type ShadowIntensity = 'none' | 'light' | 'medium' | 'heavy';
 
 export interface IFaqItem {
@@ -101,7 +100,6 @@ export interface IFaqWebPartProps {
   borderDarkness: number;
   borderThickness: number;
   borderRadius: number;
-  spacingDensity: SpacingDensity;
   shadowIntensity: ShadowIntensity;
 
   // Advanced
