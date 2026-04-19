@@ -238,7 +238,7 @@ export default class FaqAccordion extends React.Component<IFaqAccordionMainProps
       categoryAlignment, showAllCategory, categoryColorCoding, categoryColors,
       visibleCategories, categoryOrder,
       filterBarEnabled, filterColumn, filterColumnLabel, filterBarPlacement, filterBarAlignment,
-      searchPlaceholder, searchPlacement, searchAlignment, accordionStyle, arrowPosition, iconStyle, animationEnabled, itemGap,
+      searchPlaceholder, searchPlacement, searchAlignment, accordionStyle, arrowPosition, iconStyle, itemGap,
       questionFontSize, questionStyle, answerFontSize, categoryFontSize,
       accentColor, colorTitle, colorQuestion, colorAnswer,
       colorIcons, colorBorders, borderDarkness, borderThickness, borderRadius,
@@ -442,7 +442,6 @@ export default class FaqAccordion extends React.Component<IFaqAccordionMainProps
                     iconStyle={iconStyle}
                     arrowPosition={arrowPosition}
                     accordionStyle={accordionStyle}
-                    animationEnabled={animationEnabled}
                     questionFontSize={questionFontSize || 15}
                     questionStyle={questionStyle}
                     answerFontSize={answerFontSize || 14}

@@ -45,7 +45,6 @@ const LeftNavCardLayout: React.FC<ILeftNavCardLayoutProps> = ({ items, props }) 
             iconStyle={props.iconStyle}
             arrowPosition="right"
             accordionStyle="leftNavCard"
-            animationEnabled={props.animationEnabled}
             questionFontSize={props.questionFontSize}
             questionStyle={props.questionStyle}
             answerFontSize={props.answerFontSize}

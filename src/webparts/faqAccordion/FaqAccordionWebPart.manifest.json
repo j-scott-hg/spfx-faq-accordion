@@ -26,7 +26,6 @@
       "arrowPosition": "right",
       "iconStyle": "chevron",
       "expandMode": "single",
-      "animationEnabled": true,
       "showTitle": false,
       "accordionStyle": "minimal"
     }

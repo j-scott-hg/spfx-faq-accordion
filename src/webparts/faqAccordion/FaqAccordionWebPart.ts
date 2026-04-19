@@ -433,10 +433,6 @@ export default class FaqAccordionWebPart extends BaseClientSideWebPart<IFaqAccor
                   ),
                   showValue: true,
                 }),
-                PropertyPaneToggle('animationEnabled', {
-                  label: 'Enable Smooth Animation',
-                  checked: this.properties.animationEnabled !== false,
-                }),
               ],
             },
 

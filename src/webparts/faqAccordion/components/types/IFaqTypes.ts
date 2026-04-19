@@ -41,7 +41,6 @@ export interface IFaqWebPartProps {
   iconStyle: IconStyle;
   expandMode: ExpandMode;
   expandFirstItem: boolean;
-  animationEnabled: boolean;
   itemGap: number;
 
   // Title & Text

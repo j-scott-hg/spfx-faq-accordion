@@ -10,7 +10,6 @@ export interface IAccordionItemProps {
   iconStyle: IconStyle;
   arrowPosition: ArrowPosition;
   accordionStyle: AccordionStyle;
-  animationEnabled: boolean;
   questionFontSize: number;
   questionStyle?: QuestionStyle;
   answerFontSize: number;
@@ -53,7 +52,6 @@ const AccordionItem: React.FC<IAccordionItemProps> = ({
   iconStyle,
   arrowPosition,
   accordionStyle,
-  animationEnabled,
   questionFontSize,
   questionStyle,
   answerFontSize,
@@ -179,7 +177,7 @@ const AccordionItem: React.FC<IAccordionItemProps> = ({
         id={`faq-body-${item.id}`}
         role="region"
         aria-labelledby={`faq-header-${item.id}`}
-        className={`${styles.accordionBody} ${isExpanded ? styles.accordionBodyOpen : ''} ${animationEnabled ? styles.animated : ''}`}
+        className={`${styles.accordionBody} ${isExpanded ? styles.accordionBodyOpen : ''} ${styles.animated}`}
         style={bodyStyle}
       >
         <div
